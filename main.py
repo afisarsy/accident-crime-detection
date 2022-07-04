@@ -1,31 +1,44 @@
+import sys
 from pprint import pformat
 import asyncio
-
-from scipy.io.wavfile import write
 
 from libs.configloader import config
 from libs.argparser import options
 from libs.logger import getLogger
 from libs.michandler import Mic
+from libs.audiohandler import Audio
 
 logger = getLogger(__name__)
 loop = asyncio.get_event_loop()
 
-async def saveaudio(mic, sampling_rate, path):
+async def featureextreaction(mic, config, path):
+    """
+    Feature extraction task
+    """
     i = 0
     while mic.stream.is_active():
+        #Extract feature of available segments
         for segment in mic.popallsegments():
-            logger.info("Saving audio data")
-            write(path + "-" + str(i) + ".wav", sampling_rate, segment)
-            logger.info("Data saved tas %s", path + "-" + str(i) + ".wav")
-            i += 1
-        await asyncio.sleep(mic.config["segment duration"] * mic.config["overlap ratio"] / 1000)
+            #Apply bandpass filter
+            logger.info("Filtering segment")
+            filtered_segment = Audio.bandpassfilter(segment, config["sampling rate"], config["cutoff"], config["order"])
 
-async def featureextreaction(mic):
-    while mic.stream.is_active():
-        for segment in mic.popallsegments():
-            pass
-        await asyncio.sleep(mic.config["segment duration"] * mic.config["overlap ratio"] / 1000)
+            #Calculate the mel spectrogram
+            logger.info("Calculating mel spectrogram")
+            mel_spectrogram_db = Audio.getmelspectrogram(filtered_segment, config["sampling rate"], config["nfft"], config["hop length"], config["nmel"])
+
+            #Normalization
+            logger.info("Data normalization")
+            normalized_spectrogram_db = Audio.normalize(mel_spectrogram_db)
+
+            #Save spectrogram
+            #For testing purpose
+            Audio.savemel(normalized_spectrogram_db, path + "-" + str(i) + ".png")
+            logger.info("Spectrogram saved to %s", path + "-" + str(i) + ".png")
+
+            i += 1
+
+        await asyncio.sleep(config["segment duration"] * config["overlap ratio"] / 1000)
 
 def main():
     logger.info("Using scheme %i", options.scheme)
@@ -41,7 +54,7 @@ def main():
 
     #tasks declaration
     tasks = asyncio.gather(
-        loop.create_task(saveaudio(mic, config["schemes"][options.scheme - 1]["sampling rate"], "Tests/save_audio/audio"))
+        loop.create_task(featureextreaction(mic, used_scheme, "Tests/save_spectrogram/spectrogram"))
     )
 
     try:

@@ -1,6 +1,6 @@
 import argparse
 
-from libs.configLoader import config
+from libs.configloader import config
 
 schemes = config["schemes"]
 parser = argparse.ArgumentParser()

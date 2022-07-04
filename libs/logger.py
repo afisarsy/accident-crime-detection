@@ -1,6 +1,6 @@
 import logging
 
-from libs.argParser import options
+from libs.argparser import options
 
 levels = {
     'critical': logging.CRITICAL,

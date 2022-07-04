@@ -15,80 +15,68 @@ class Mic:
     """
     
     #config
-    config = {
-        "arch": None,
+    __config = {
         "sampling rate": 44100,
         "segment duration": None,
-        "overlap ratio": None,
-        "cutoff": [],
-        "order": None,
-        "nfft": None,
-        "hop length": None,
-        "nmel": 128
+        "overlap ratio": None
     }
 
     #mic device params
-    mic = None
-    selected_device_index = 0
-    info = None
-    num_devices = 0
-    available_devices = []
+    __mic = None
+    __selected_device_index = 0
+    __info = None
+    __num_devices = 0
+    __available_devices = []
 
     #stream params
     stream = None
-    CHUNKS_PER_SEGMENT = 20
-    chunks = []
-    CHUNK_COUNTER = 0
-    streambits = None
-    segments = []
+    __CHUNKS_PER_SEGMENT = 20
+    __chunks = []
+    __CHUNK_COUNTER = 0
+    __streambits = None
+    __segment = []
 
     def __init__(self, conf):
         """
         Create Microphone Object
         """
         #Mic initialization
-        self.mic = pyaudio.PyAudio()
-        self.info = self.mic.get_host_api_info_by_index(0)
-        self.num_devices = self.info.get('deviceCount')
-        self.available_devices = [self.mic.get_device_info_by_host_api_device_index(0, i).get('name') for i in range(0, self.num_devices) if (self.mic.get_device_info_by_host_api_device_index(0, i).get('maxInputChannels')) > 1]
+        self.__mic = pyaudio.PyAudio()
+        self.__info = self.__mic.get_host_api_info_by_index(0)
+        self.__num_devices = self.__info.get('deviceCount')
+        self.__available_devices = [self.__mic.get_device_info_by_host_api_device_index(0, i).get('name') for i in range(0, self.__num_devices) if (self.__mic.get_device_info_by_host_api_device_index(0, i).get('maxInputChannels')) > 1]
 
         #Load scheme
-        self.config["arch"] = conf["arch"]
-        self.config["sampling rate"] = conf["sampling rate"]
-        self.config["segment duration"] = conf["segment duration"]
-        self.config["overlap ratio"] = conf["overlap ratio"]
-        self.config["cutoff"] = conf["cutoff"]
-        self.config["order"] = conf["order"]
-        self.config["nfft"] = conf["nfft"]
-        self.config["hop length"] = conf["hop length"]
-        self.config["nmel"] = conf["nmel"]
+        self.__config["sampling rate"] = conf["sampling rate"]
+        self.__config["segment duration"] = conf["segment duration"]
+        self.__config["overlap ratio"] = conf["overlap ratio"]
 
         #Mic stream initialization
-        self.streambits = int(self.config["sampling rate"] / self.CHUNKS_PER_SEGMENT)
+        self.__streambits = int(self.__config["sampling rate"] / self.__CHUNKS_PER_SEGMENT)
         #Add silent segment
-        silent_chunk = (np.zeros(self.streambits)).astype(np.float32)
-        for i in range(0, int(self.CHUNKS_PER_SEGMENT * (self.config["segment duration"] / 1000))):
-            self.chunks.append(silent_chunk)
+        silent_chunk = (np.zeros(self.__streambits)).astype(np.float32)
+        for i in range(0, int(self.__CHUNKS_PER_SEGMENT * (self.__config["segment duration"] / 1000))):
+            self.__chunks.append(silent_chunk)
 
 
     def getdevices(self):
         """
         List available audio input devices
         """
-        for i in range(0, len(self.available_devices)):
-            logger.debug("Input Device id %i - %s", i, self.available_devices[i])
+        for i in range(0, len(self.__available_devices)):
+            logger.debug("Input Device id %i - %s", i, self.__available_devices[i])
     
     def selectdevice(self, id):
         """
         Select audio input device to be used
         """
-        if id >= len(self.available_devices) or id < 0:
-            devices = {i: self.available_devices[i] for i in range(0, len(self.available_devices))}
+        if id >= len(self.__available_devices) or id < 0:
+            devices = {i: self.__available_devices[i] for i in range(0, len(self.__available_devices))}
             logger.warning(
                 "Device with id %i not available, available devices:\n %s", id, pformat(devices)
             )
             return 0
-        self.selected_device_index = id
+        self.__selected_device_index = id
         self.getselecteddevice()
     
     def getselecteddevice(self):
@@ -96,20 +84,20 @@ class Mic:
         Return selected audio input device info
         """
         logger.info(
-            "Selected device %i - %s", self.selected_device_index, self.available_devices[self.selected_device_index]
+            "Selected device %i - %s", self.__selected_device_index, self.__available_devices[self.__selected_device_index]
         )
-        return {self.selected_device_index: self.available_devices[self.selected_device_index]}
+        return {self.__selected_device_index: self.__available_devices[self.__selected_device_index]}
     
     def streamdatacallback(self, data, frame_count, time_info, status):
-        self.chunks.append(data)
-        self.chunks.pop(0)
-        self.CHUNK_COUNTER += 1
-        if self.CHUNK_COUNTER >= int(self.CHUNKS_PER_SEGMENT * self.config["overlap ratio"] * (self.config["segment duration"] / 1000)):
+        self.__chunks.append(data)
+        self.__chunks.pop(0)
+        self.__CHUNK_COUNTER += 1
+        if self.__CHUNK_COUNTER >= int(self.__CHUNKS_PER_SEGMENT * self.__config["overlap ratio"] * (self.__config["segment duration"] / 1000)):
             #Save collected chunks with total duration = config["segment duration"]
-            self.segments.append(np.frombuffer(b''.join(self.chunks), np.float32))
+            self.__segment.append(np.frombuffer(b''.join(self.__chunks), np.float32))
             logger.info("Audio segment created")
 
-            self.CHUNK_COUNTER = 0
+            self.__CHUNK_COUNTER = 0
         return data, pyaudio.paContinue
 
     def startstream(self):
@@ -117,18 +105,18 @@ class Mic:
         Start streaming selected audio input
         """
         logger.info("Initializing streamer")
-        self.stream = self.mic.open(format = FORMAT,
+        self.stream = self.__mic.open(format = FORMAT,
             channels = CHANNELS,
-            rate = self.config["sampling rate"],
-            frames_per_buffer = self.streambits,
+            rate = self.__config["sampling rate"],
+            frames_per_buffer = self.__streambits,
             output = False,
             input = True,
-            input_device_index = self.selected_device_index,
+            input_device_index = self.__selected_device_index,
             stream_callback = self.streamdatacallback
         )
         logger.info("Starting audio stream")
         self.stream.start_stream()
-        logger.info("Stream started using device %i - %s", self.selected_device_index, self.available_devices[self.selected_device_index])
+        logger.info("Stream started using device %i - %s", self.__selected_device_index, self.__available_devices[self.__selected_device_index])
 
     def stopstream(self):
         """
@@ -144,8 +132,8 @@ class Mic:
         """
         Pop all available segments
         """
-        popped_segments, self.segments = self.segments, []
+        popped_segments, self.__segment = self.__segment, []
         return popped_segments
 
     def destroy(self):
-        self.mic.terminate()
+        self.__mic.terminate()
