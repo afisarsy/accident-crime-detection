@@ -14,7 +14,7 @@ loop = asyncio.get_event_loop()
 async def saveaudio(mic, sampling_rate, path):
     i = 0
     while True:
-        for segment in mic.segments:
+        for segment in mic.popallsegments():
             logger.info("Saving audio data")
             write(path + "-" + str(i) + ".wav", sampling_rate, segment)
             logger.info("Data saved to %s", path + "-" + str(i) + ".wav")
@@ -25,7 +25,7 @@ async def saveaudio(mic, sampling_rate, path):
 async def routines(mic):
     logger.info("Starting routines")
     #create audio stream task
-    mic_stream_task = mic.startstream()
+    mic.startstream()
     audio_save_task = loop.create_task(saveaudio(mic, config["schemes"][options.scheme - 1]["sampling rate"], "Tests/save_audio/audio"))
 
     #wait all task excep routines

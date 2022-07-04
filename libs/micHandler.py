@@ -19,7 +19,7 @@ class Mic:
     config = {
         "arch": None,
         "sampling rate": 44100,
-        "chunk duration": None,
+        "segment duration": None,
         "overlap ratio": None,
         "cutoff": [],
         "order": None,
@@ -39,6 +39,7 @@ class Mic:
     stream = None
     chunks_per_segment = 20
     chunks = []
+    chunk_counter = 0
     streambits = None
     segments = []
 
@@ -58,7 +59,7 @@ class Mic:
         #Load scheme
         self.config["arch"] = conf["arch"]
         self.config["sampling rate"] = conf["sampling rate"]
-        self.config["chunk duration"] = conf["chunk duration"]
+        self.config["segment duration"] = conf["segment duration"]
         self.config["overlap ratio"] = conf["overlap ratio"]
         self.config["cutoff"] = conf["cutoff"]
         self.config["order"] = conf["order"]
@@ -103,6 +104,18 @@ class Mic:
         )
         return {self.selected_device_index: self.available_devices[self.selected_device_index]}
     
+    def streamdatacallback(self, data, frame_count, time_info, status):
+        self.chunks.append(data)
+        self.chunks.pop(0)
+        self.chunk_counter += 1
+        if self.chunk_counter >= int(self.chunks_per_segment * self.config["overlap ratio"]):
+            #Save collected chunks with total duration = config["segment duration"]
+            self.segments.append(np.frombuffer(b''.join(self.chunks), np.float32))
+            logger.info("Audio segment created")
+
+            self.chunk_counter = 0
+        return data, pyaudio.paContinue
+
     def startstream(self):
         """
         Start streaming selected audio input
@@ -111,43 +124,32 @@ class Mic:
         self.stream = self.mic.open(format = FORMAT,
             channels = CHANNELS,
             rate = self.config["sampling rate"],
-            frames_per_buffer = self.config["chunk duration"],
+            frames_per_buffer = self.streambits,
             output = False,
             input = True,
-            input_device_index = self.selected_device_index
+            input_device_index = self.selected_device_index,
+            stream_callback = self.streamdatacallback
         )
         logger.info("Starting audio stream")
         self.stream.start_stream()
         logger.info("Stream started using device %i - %s", self.selected_device_index, self.available_devices[self.selected_device_index])
-        mic_stream_task = self.loop.create_task(self.getstreamdata())
-        return mic_stream_task
-    
+
     def stopstream(self):
         """
         Stop audio input stream
         """
-        logger.info("Stopping stream")
-        #self.loop.get_task_factory
-
         #stop audio input stream
-        self.stream.stopstream()
+        logger.info("Stopping stream")
+        self.stream.stop_stream()
         self.stream.close()
         logger.info("Stream stopped")
-
-    async def getstreamdata(self):
-        i = 0
-        while True:
-            data = self.stream.read(self.streambits)
-            self.chunks.append(data)
-            self.chunks.pop(0)
-            i += 1
-            if i >= int(self.chunks_per_segment * self.config["overlap ratio"]):
-                i = 0
-                self.createsegment()
-                logger.info("Audio segment created")
     
-    def createsegment(self):
-        self.segments.append(np.frombuffer(b''.join(self.chunks), np.float32))
+    def popallsegments(self):
+        """
+        Pop all available segments
+        """
+        popped_segments, self.segments = self.segments, []
+        return popped_segments
 
     def destroy(self):
         self.mic.terminate()
