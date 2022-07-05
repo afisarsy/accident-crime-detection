@@ -1,0 +1,70 @@
+import logging
+
+from scipy.signal import butter, lfilter
+import numpy as np
+from librosa import power_to_db
+from librosa.feature import melspectrogram
+import skimage.io
+from scipy.io.wavfile import write
+
+logger = logging.getLogger(__name__)
+
+class Audio:
+    """
+    Audio Object
+    """
+    @staticmethod
+    def bandpassfilter(segment, sampling_rate, cutoff, order=5):
+        """
+        Butterworth bandpass filter
+        """
+        nyq = 0.5 * sampling_rate
+
+        b, a = butter(order, [cutoff[0] / nyq, cutoff[1] / nyq], analog=False, btype='band')
+        filtered_data = np.array(lfilter(b, a, segment)).astype(np.float32) # 16 bit
+
+        return filtered_data
+    
+    @staticmethod
+    def getmelspectrogram(segment, sampling_rate, n_fft, hop_length, n_mels):
+        """
+        Calculate and return mel spectrogram (dB) of the segment
+        """
+        mel_spectrogram = melspectrogram(y=segment, sr=sampling_rate, n_fft=n_fft, hop_length=hop_length, n_mels=n_mels)
+        mel_spectrogram_db = power_to_db(mel_spectrogram)
+        return mel_spectrogram_db
+    
+    @staticmethod
+    def normalize(S_db):
+        """
+        Return normalized and flipped (low frequencies at bottom {img}) spectrogram (db)
+        """
+        S_db = Audio.__minmaxnormalization(S_db, min=0.0, max=1.0)
+        normalized = np.flip(S_db, axis=0) # put low frequencies at the bottom in image
+        return normalized
+
+    @staticmethod
+    def __minmaxnormalization(X, min=0.0, max=1.0):
+        """
+        Min-Max normalization function
+        """
+        X_std = (X - X.min()) / (X.max() - X.min())
+        X_scaled = X_std * (max - min) + min
+        return X_scaled
+
+    @staticmethod
+    def savemel(S_db, path):
+        """
+        Save spetrogram as image
+        """
+        path += ".png" if path[-4:] != ".png" else ""
+        img = (S_db * 255).astype(dtype=np.uint8)
+        skimage.io.imsave(path, img)
+    
+    @staticmethod
+    def saveaudio(segment, sampling_rate, path):
+        """
+        Save audio as wav file
+        """
+        path += ".wav" if path[-4:] != ".wav" else ""
+        write(path, sampling_rate, segment)

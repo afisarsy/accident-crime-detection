@@ -6,7 +6,7 @@ from libs.configloader import config
 from libs.argparser import options
 from libs.logger import getLogger
 from libs.michandler import Mic
-from libs.audiohandler import Audio
+from libs.audiomodule import Audio
 
 logger = getLogger(__name__)
 loop = asyncio.get_event_loop()
