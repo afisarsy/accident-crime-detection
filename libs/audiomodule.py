@@ -4,7 +4,7 @@ from scipy.signal import butter, lfilter
 import numpy as np
 from librosa import power_to_db
 from librosa.feature import melspectrogram
-import skimage.io
+from skimage.io import imsave
 from scipy.io.wavfile import write
 
 logger = logging.getLogger(__name__)
@@ -59,7 +59,7 @@ class Audio:
         """
         path += ".png" if path[-4:] != ".png" else ""
         img = (S_db * 255).astype(dtype=np.uint8)
-        skimage.io.imsave(path, img)
+        imsave(path, img)
     
     @staticmethod
     def saveaudio(segment, sampling_rate, path):

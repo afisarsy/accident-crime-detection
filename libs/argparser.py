@@ -1,39 +1,34 @@
 import argparse
+import logging
 
-from libs.configloader import config
+def checkthreshold(th):
+    try:
+        th = float(th)
+    except ValueError:
+        raise argparse.ArgumentTypeError("%r is not a float value" % th)
 
-schemes = config["schemes"]
-parser = argparse.ArgumentParser()
+    if not 0. <= th <= 1.:
+        raise argparse.ArgumentTypeError("%r must be a float between (0.0-1.0)" % th)
 
-parser.add_argument(
-    "scheme",
-    type=int,
-    choices=range(1, len(schemes)+1),
-    metavar="SCHEME_ID",
-    help=(
-        "Provide scheme index. "
-        "Use -get schemes to show available schemes in config.file. "
-        "Change scheme parameters from config.file. "
-    ),
-)
+    return th
 
-parser.add_argument(
-    "-get",
-    default=None,
-    help=(
-        "Provide required data. "
-        "Available options [schemes]. "
-    )
-)  
+def checkarch(arch):
+    archs = ["cnn", "dnn", "rnn"]
+    arch = arch.lower()
+    if arch is None:
+        raise argparse.ArgumentTypeError("ARCH must be one of %r" % {' | '.join(archs.upper())})
+    return arch
 
-parser.add_argument(
-    "-log",
-    "--log",
-    default="info",
-    help=(
-        "Provide logging level. "
-        "Example --log debug, default='warning'"
-    )
-)
-
-options = parser.parse_args()
+def checkloglevel(log_level):
+    levels = {
+        'critical': logging.CRITICAL,
+        'error': logging.ERROR,
+        'warn': logging.WARNING,
+        'warning': logging.WARNING,
+        'info': logging.INFO,
+        'debug': logging.DEBUG
+    }
+    level = levels.get(log_level.lower())
+    if level is None:
+        raise argparse.ArgumentTypeError("log level must be one of %r" % {' | '.join(levels.keys())})
+    return level

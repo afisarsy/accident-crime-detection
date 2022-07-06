@@ -1,15 +1,55 @@
-import sys
+import argparse
+import logging
 from pprint import pformat
 import asyncio
 
-from libs.configloader import config
-from libs.argparser import options
-from libs.logger import getLogger
+from libs.argparser import checkthreshold, checkloglevel
+from libs.logger import initlogger
+from libs.configloader import loadconfig
 from libs.michandler import Mic
 from libs.audiomodule import Audio
 
-logger = getLogger(__name__)
-loop = asyncio.get_event_loop()
+def initargparser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "model",
+        metavar="MODEL_PATH",
+        help=(
+            "Provide model path. "
+            "MODEL_PATH must contain config.file. "
+        ),
+    )
+    parser.add_argument(
+        "threshold",
+        metavar="TH",
+        type=checkthreshold,
+        help=(
+            "Provide threhold value. "
+            "TH must be a float between (0.0-1.0). "
+        ),
+    )
+    parser.add_argument(
+        "-get",
+        default=None,
+        help=(
+            "Provide required data. "
+            "Available options [schemes]. "
+        )
+    )
+    parser.add_argument(
+        "-log",
+        "--log",
+        type=checkloglevel,
+        default="info",
+        help=(
+            "Provide logging level. "
+            "Example --log debug, default='warning'"
+        )
+    )
+    options = parser.parse_args()
+    options.model = options.model.replace("\\","/")
+
+    return options
 
 async def featureextreaction(mic, config, path):
     """
@@ -31,6 +71,9 @@ async def featureextreaction(mic, config, path):
             logger.info("Data normalization")
             normalized_spectrogram_db = Audio.normalize(mel_spectrogram_db)
 
+            #Check input data
+            logger.debug(normalized_spectrogram_db)
+
             #Save spectrogram
             #For testing purpose
             Audio.savemel(normalized_spectrogram_db, path + "-" + str(i) + ".png")
@@ -40,13 +83,23 @@ async def featureextreaction(mic, config, path):
 
         await asyncio.sleep(config["segment duration"] * config["overlap ratio"] / 1000)
 
+logger = logging.getLogger(__name__)
+loop = asyncio.get_event_loop()
+
 def main():
-    logger.info("Using scheme %i", options.scheme)
-    logger.info("Scheme property : \n%s",pformat(config["schemes"][options.scheme - 1]))
-    used_scheme = config["schemes"][options.scheme - 1]
+    """
+    Audio-based detection and crime detection system
+    Realtime runtime system
+    """
+    options = initargparser()
+    initlogger(options.log)
+    config = loadconfig(options.model)
+
+    logger.info("Using model %s", options.model)
+    logger.info("Config : \n%s",pformat(config))
 
     #mic initialization
-    mic = Mic(used_scheme)
+    mic = Mic(config)
     mic.getdevices()
     mic.selectdevice(2)
     #start audio stream
@@ -54,7 +107,7 @@ def main():
 
     #tasks declaration
     tasks = asyncio.gather(
-        loop.create_task(featureextreaction(mic, used_scheme, "Tests/save_spectrogram/spectrogram"))
+        loop.create_task(featureextreaction(mic, config, "Tests/save_spectrogram/spectrogram"))
     )
 
     try:

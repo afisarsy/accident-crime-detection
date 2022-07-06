@@ -15,11 +15,9 @@ class Mic:
     """
     
     #config
-    __config = {
-        "sampling rate": 44100,
-        "segment duration": None,
-        "overlap ratio": None
-    }
+    __sampling_rate = 44100
+    __segment_duration = None
+    __overlap_ratio = None
 
     #mic device params
     __mic = None
@@ -47,15 +45,15 @@ class Mic:
         self.__available_devices = [self.__mic.get_device_info_by_host_api_device_index(0, i).get('name') for i in range(0, self.__num_devices) if (self.__mic.get_device_info_by_host_api_device_index(0, i).get('maxInputChannels')) > 1]
 
         #Load scheme
-        self.__config["sampling rate"] = conf["sampling rate"]
-        self.__config["segment duration"] = conf["segment duration"]
-        self.__config["overlap ratio"] = conf["overlap ratio"]
+        self.__sampling_rate = conf["sampling rate"]
+        self.__segment_duration = conf["segment duration"]
+        self.__overlap_ratio = conf["overlap ratio"]
 
         #Mic stream initialization
-        self.__streambits = int(self.__config["sampling rate"] / self.__CHUNKS_PER_SEGMENT)
+        self.__streambits = int(self.__sampling_rate / self.__CHUNKS_PER_SEGMENT)
         #Add silent segment
         silent_chunk = (np.zeros(self.__streambits)).astype(np.float32)
-        for i in range(0, int(self.__CHUNKS_PER_SEGMENT * (self.__config["segment duration"] / 1000))):
+        for i in range(0, int(self.__CHUNKS_PER_SEGMENT * (self.__segment_duration / 1000))):
             self.__chunks.append(silent_chunk)
 
 
@@ -92,7 +90,7 @@ class Mic:
         self.__chunks.append(data)
         self.__chunks.pop(0)
         self.__CHUNK_COUNTER += 1
-        if self.__CHUNK_COUNTER >= int(self.__CHUNKS_PER_SEGMENT * self.__config["overlap ratio"] * (self.__config["segment duration"] / 1000)):
+        if self.__CHUNK_COUNTER >= int(self.__CHUNKS_PER_SEGMENT * self.__overlap_ratio * (self.__segment_duration / 1000)):
             #Save collected chunks with total duration = config["segment duration"]
             self.__segment.append(np.frombuffer(b''.join(self.__chunks), np.float32))
             logger.info("Audio segment created")
@@ -107,7 +105,7 @@ class Mic:
         logger.info("Initializing streamer")
         self.stream = self.__mic.open(format = FORMAT,
             channels = CHANNELS,
-            rate = self.__config["sampling rate"],
+            rate = self.__sampling_rate,
             frames_per_buffer = self.__streambits,
             output = False,
             input = True,
