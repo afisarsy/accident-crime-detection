@@ -6,43 +6,116 @@ import json
 import numpy as np
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Input, Conv1D, MaxPool1D, Flatten, Dense
-from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.optimizers import Adam, RMSprop, Nadam, Adamax, Ftrl, Adadelta, Adagrad, SGD
 
-from libs.argparser import checkarch, checkloglevel
+from libs.configmodule import saveconfig
+from libs.argparser import parser, checkarch, checkoptimizer, checklearningrate
 from libs.logger import initlogger
-from libs.nnmodule import NN, NormTrain, Rot90
+from libs.nnmodule import NN, Rot90
 
-def initargparser():
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "arch",
-        metavar="ARCH",
-        type=checkarch,
-        help=(
-            "Provide NN architecture type. "
-            "Available options CNN | DNN | RNN. "
-        ),
-    )
-    parser.add_argument(
-        "dataset",
-        metavar="DATASET_PATH",
-        help=(
-            "Provide dataset path. "
-            "DATASET_PATH must contain properties.txt. "
-        ),
-    )
-    parser.add_argument(
-        "-log",
-        "--log",
-        type=checkloglevel,
-        default="info",
-        help=(
-            "Provide logging level. "
-            "Example --log debug, default='warning'"
-        )
-    )
-    options = parser.parse_args()
-    return options
+logger = logging.getLogger(__name__)
+
+def main():
+    """
+    Audio-based detection and crime detection system
+    Training system
+    """
+    options = initargparser()
+    initlogger(options.log)
+
+    #Params
+    OUTPUT_PATH = "Models"
+    
+    #Load dataset config
+    dataset_conf = {}
+    with open(options.dataset + '/properties.txt') as f:
+        dataset_conf = json.load(f)
+    if dataset_conf == {}:
+        raise FileNotFoundError("Failed to read %s", (options.dataset + '/properties.txt'))
+
+    #Compile train config
+    config = {
+        "arch" : options.arch,
+        "dataset" : options.dataset.replace("\\","/"),
+        "classes" : dataset_conf["enhance"]["classes"],
+        "batch size" : options.batch,
+        "learning rate" : options.learning_rate,
+        "train-val ratio": dataset_conf["split"]["train ratio"],
+        "epochs" : options.epochs,
+        "sampling rate": dataset_conf["spectrogram"]["sampling rate"],
+        "chunk duration" : dataset_conf["spectrogram"]["chunk duration"],
+        "overlap ratio": dataset_conf["spectrogram"]["overlap ratio"],
+        "cutoff": dataset_conf["spectrogram"]["cutoff"],
+        "order": dataset_conf["spectrogram"]["order"],
+        "nfft": dataset_conf["spectrogram"]["nfft"],
+        "hop length": dataset_conf["spectrogram"]["hop length"],
+        "nmel": dataset_conf["spectrogram"]["nmel"],
+    }
+
+    #Print training params
+    logger.info("")
+    
+    #Load dataset
+    (x_train, y_train), (x_val, y_val), (x_test, y_test), classes = NN.loaddataset(config["dataset"])
+
+    #Get input size
+    input_shape = x_train[0].shape[0:2]
+    logger.info(input_shape)
+
+    #Create model
+    if config["arch"] == "cnn":
+        model = createcnn(input_shape, len(classes))
+    elif config["arch"] == "dnn":
+        model = creatednn(input_shape, len(classes))
+    elif config["arch"] == "rnn":
+        model = creaternn(input_shape, len(classes))
+    model.summary()
+    logger.info("Model created")
+
+    #Select optimizer
+    if options.optimizer == "adadelta":
+        used_optimizer = Adadelta
+    elif options.optimizer == "adagrad":
+        used_optimizer = Adagrad
+    elif options.optimizer == "adam":
+        used_optimizer = Adam
+    elif options.optimizer == "adamax":
+        used_optimizer = Adamax
+    elif options.optimizer == "ftrl":
+        used_optimizer = Ftrl
+    elif options.optimizer == "nadam":
+        used_optimizer = Nadam
+    elif options.optimizer == "rmsprop":
+        used_optimizer = RMSProp
+    elif options.optimizer == "sgd":
+        used_optimizer = SGD
+
+    #Train
+    logger.info("Training started")
+    model.compile(optimizer=used_optimizer(learning_rate=config["learning rate"]), loss='categorical_crossentropy', metrics=['accuracy'])
+    model.fit(x_train, y_train, batch_size=config["batch size"], validation_data=(x_val, y_val), epochs=config["epochs"], verbose=2)
+    logger.info("Training completed")
+
+    #Evaluate
+    score = model.evaluate(x=x_test, y=y_test, batch_size=config["batch size"], verbose=0)
+    logger.info('Test loss: %r', score[0]) 
+    logger.info('Test accuracy: %r', score[1])
+
+    #Save model
+    model_path = OUTPUT_PATH + "/" + config["arch"].upper() + "_" + str(config["train-val ratio"]) + "_" + str(config["chunk duration"]) + "_" + str(config["cutoff"])
+    if not os.path.exists(model_path):
+        os.makedirs(model_path)
+    output_path = model_path + "/" + options.optimizer.capitalize() + ("_%.1f" % (score[1]*100))
+    model.save(output_path + '.h5')
+    logger.info("Model saved to %s", output_path + ".h5")
+
+    #Write config file
+    saveconfig(output_path, config)
+    
+    #Write architecture
+    with open(output_path + ".arch", 'w') as f:
+        model.summary(print_fn=lambda x: f.write(x))
+    logger.info("Architecture detail saved to %s", model_path + "/" + options.optimizer.capitalize() + ("_%.1f.arch" % (score[1]*100)))
 
 #CNN model
 def createcnn(input_shape, n_output):
@@ -51,13 +124,11 @@ def createcnn(input_shape, n_output):
     """
     cnn_model = Sequential([
         Input(shape=input_shape),                                   # 128 x 87      | 128 x 44      |   O = output, I = input, H = kernel
-        NormTrain(),                                                #                               |   Normalize data from 0-255 to 0-1 during training
         Rot90(k=3),                                                 # 87 x 128      | 44 x 128      |   Rotate -90deg times (Matching the data structure with time)
         Conv1D(filters=64, kernel_size=7, activation='relu'),       # 81 x 64       | 38 x 64       |   (O_height = I_height - H_height + 1), n_filter
         MaxPool1D(pool_size=3),                                     # 27 x 64       | 12 x 64       |   (O_height = I_height / H_strides), I_depth
-        Conv1D(filters=32, kernel_size=3, activation='relu'),       # 25 x 32       | 10 x 32       |   (O_height = I_height - H_height + 1), n_filter
-        MaxPool1D(pool_size=3),                                     #  8 x 32       |  3 x 32       |   (O_height = I_height / H_strides), I_depth
         Flatten(),
+        Dense(units=512, activation='elu'),
         Dense(units=128, activation='elu'),
         Dense(units=n_output, activation='softmax')
     ])
@@ -96,88 +167,65 @@ def creaternn(input_shape, n_output):
 
     return rnn_model
 
-logger = logging.getLogger(__name__)
-
-def main():
-    """
-    Audio-based detection and crime detection system
-    Training system
-    """
-    options = initargparser()
-    initlogger(options.log)
-
-    #Params
-    BATCH_SIZE = 128
-    LEARNING_RATE = 0.0001
-    EPOCHS = 100
-    OUTPUT_PATH = "Models"
-    
-    #Load dataset config
-    dataset_conf = {}
-    with open(options.dataset + '/properties.txt') as f:
-        dataset_conf = json.load(f)
-    if dataset_conf == {}:
-        raise FileNotFoundError("Failed to read %s", (options.dataset + '/properties.txt'))
-    
-    #Load dataset
-    (x_train, y_train), (x_val, y_val), (x_test, y_test), classes = NN.loaddataset(options.dataset)
-
-    #Get input size
-    input_shape = x_train[0].shape[0:2]
-    logger.info(input_shape)
-
-    #Create model
-    if options.arch == "cnn":
-        model = createcnn(input_shape, len(classes))
-    elif options.arch == "dnn":
-        model = creatednn(input_shape, len(classes))
-    elif options.arch == "rnn":
-        model = creaternn(input_shape, len(classes))
-    model.summary()
-    logger.info("Model created")
-
-    #Train
-    logger.info("Training started")
-    model.compile(optimizer=Adam(learning_rate=LEARNING_RATE), loss='categorical_crossentropy', metrics=['accuracy'])
-    model.fit(x_train, y_train, batch_size=BATCH_SIZE, validation_data=(x_val, y_val), epochs=EPOCHS, verbose=2)
-    logger.info("Training completed")
-
-    #Evaluate
-    score = model.evaluate(x=x_test, y=y_test, batch_size=BATCH_SIZE, verbose=0)
-    logger.info('Test loss: %r', score[0]) 
-    logger.info('Test accuracy: %r', score[1])
-
-    #Save model
-    model_path = OUTPUT_PATH + "/" + options.arch.upper() + "_" + str(dataset_conf["spectrogram"]["chunk duration"]) + "_" + str(dataset_conf["spectrogram"]["cutoff"])
-    if not os.path.exists(model_path):
-        os.makedirs(model_path)
-    model.save(model_path + "/model.h5")
-    logger.info("Model saved to %s", (model_path + "/model.h5"))
-
-    #Write config file
-    with open(OUTPUT_PATH + "/config.file", 'w') as f:
-        config = {
-            "dataset" : options.dataset,
-            "classes" : classes,
-            "batch size" : BATCH_SIZE,
-            "learning rate" : LEARNING_RATE,
-            "epoch" : EPOCHS,
-            "sampling rate": dataset_conf["spectrogram"]["sampling rate"],
-            "chunk duration" : dataset_conf["spectrogram"]["chunk duration"],
-            "overlap ratio": dataset_conf["spectrogram"]["overlap ratio"],
-            "cutoff": dataset_conf["spectrogram"]["cutoff"],
-            "order": dataset_conf["spectrogram"]["order"],
-            "nfft": dataset_conf["spectrogram"]["nfft"],
-            "hop length": dataset_conf["spectrogram"]["hop length"],
-            "nmel": dataset_conf["spectrogram"]["nmel"],
-        }
-        f.write(json.dumps(config))
-    logger.info("Train property saved to %s", OUTPUT_PATH + "/config.file")
-    
-    #Write architecture
-    with open(OUTPUT_PATH + "/architecture.txt", 'w') as f:
-        model.summary(print_fn=lambda x: f.write(x))
-    logger.info("Architecture detail saved to %s", OUTPUT_PATH + "/architecture.txt")
+def initargparser():
+    parser.add_argument(
+        "arch",
+        metavar="ARCH",
+        type=checkarch,
+        help=(
+            "Provide NN architecture type. "
+            "Available options CNN | DNN | RNN. "
+        ),
+    )
+    parser.add_argument(
+        "optimizer",
+        metavar="OPTIMIZER",
+        type=checkoptimizer,
+        help=(
+            "Provide model OPTIMIZER type. "
+            "Available options Adadelta | Adagrad | Adam | Adamax | Ftrl | Nadam | RMSProp | SGD. "
+        ),
+    )
+    parser.add_argument(
+        "dataset",
+        metavar="DATASET_PATH",
+        help=(
+            "Provide dataset path. "
+            "DATASET_PATH must contain properties.txt. "
+        ),
+    )
+    parser.add_argument(
+        "-batch",
+        "--batch",
+        metavar="BATCH",
+        type=int,
+        default=128,
+        help=(
+            "Provide BATCH value. "
+        ),
+    )
+    parser.add_argument(
+        "-lr",
+        "--learning_rate",
+        metavar="LR",
+        type=checklearningrate,
+        default=0.0001,
+        help=(
+            "Provide learning rate value. "
+        ),
+    )
+    parser.add_argument(
+        "-epochs",
+        "--epochs",
+        metavar="EPOCHS",
+        type=int,
+        default=100,
+        help=(
+            "Provide EPOCHS value. "
+        ),
+    )
+    options = parser.parse_args()
+    return options
 
 if __name__ == '__main__':
     main()

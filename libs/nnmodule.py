@@ -1,4 +1,5 @@
 import os
+import sys
 import logging
 import random
 
@@ -6,7 +7,6 @@ import numpy as np
 from tensorflow.keras.layers import Layer
 from tensorflow.keras.models import load_model
 from tensorflow.keras.utils import to_categorical
-from tensorflow.math import divide
 from tensorflow.experimental.numpy import rot90
 from PIL import Image
 
@@ -22,30 +22,25 @@ class NN:
     #Config
     __arch = None
     __model_path = None
-    __labels = []
-    __outputs = []
+    __classes = []
+    __output_map = []
 
     #Input buffer
-    __input = []
+    __buffer = []
 
-    def __init__(self, conf):
+    def __init__(self, model_path, output_map, conf):
         """
         Create Neural Network Object
         """
         #Load config
+        self.__model_path = model_path
         self.__arch = conf["arch"]
-        self.__model_path = conf["model path"]
-        self.__labels = conf["labels"]
-        self.__outputs = conf["outputs"]
+        self.__classes = conf["classes"]
+        self.__output_map = output_map
         
         #NN initialization
         self.__model = load_model(self.__model_path)
         self.__model.summary()
-    
-    def reshapedata(self):
-        """
-        Reshape batch data
-        """
 
     def predict(self, x):
         """
@@ -55,11 +50,29 @@ class NN:
         y = self.__model.predict(x=x, verbose=0)
         return y
     
-    def thresholding(self, y):
+    def thresholding(self, y, th):
         """
         Threshold and mapping the prediction result
         """
+        most_confidence_index = int(np.argmax(y, axis=-1))
+        nn_result = self.__classes[most_confidence_index]
+        confidence = y[0][most_confidence_index]
+        output = self.__output_map[nn_result] if confidence >= th else list(self.__output_map.values())[0]
+        return output
     
+    def add2buffer(self, x):
+        """
+        Add feature to buffer
+        """
+        self.__buffer.append(x)
+
+    def popallbuffer(self):
+        """
+        Pop all features from buffer
+        """
+        x, self.__buffer = self.__buffer, []
+        return x
+
     @staticmethod
     def loaddataset(dataset_path):
         """
@@ -94,9 +107,15 @@ class NN:
                 try:
                     #Get spectrogram data from image file
                     spectrogram = np.array(Image.open(file_path))
+
+                    #Normalize data
+                    spectrogram = spectrogram / 255.
                     data.append([spectrogram, label_index])
-                except:
+                except FileNotFoundError:
                     logger.warn("Failed to load image %s", file_path)
+                except KeyboardInterrupt:
+                    logger.info("Program terminated")
+                    sys.exit(0)
         
         #Shuffle loaded data
         random.shuffle(data)
@@ -107,24 +126,6 @@ class NN:
         y = np.array(to_categorical(y, len(classes)))
 
         return (x, y), classes
-
-class NormTrain(Layer):
-    """
-    Normalization Layer
-    Normalize input in training process from 0-255 to 0-1
-    """
-    def __init__(self, **kwargs):
-        super(NormTrain, self).__init__(**kwargs)
-
-    def get_config(self):
-        config = super(NormTrain, self).get_config()
-        return config
-    
-    def call(self, x, training=None):
-        if training:
-            norm_x =  divide(x, 255)
-            return norm_x
-        return x
 
 class Rot90(Layer):
     """
