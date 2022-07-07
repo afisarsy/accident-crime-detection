@@ -50,7 +50,7 @@ def main():
     #tasks declaration
     tasks = asyncio.gather(
         loop.create_task(featureextreaction(mic, nn, config, "Tests/save_spectrogram/spectrogram")),
-        loop.create_task(detection(mic, nn, options.threshold)
+        loop.create_task(detection(mic, nn, options.threshold))
     )
 
     try:
