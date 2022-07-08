@@ -6,7 +6,7 @@ import json
 import numpy as np
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Input, Conv1D, MaxPool1D, Flatten, Dense
-from tensorflow.keras.optimizers import Adam, RMSprop, Nadam, Adamax, Ftrl, Adadelta, Adagrad, SGD
+from tensorflow.keras.optimizers import Adam, Adagrad, RMSprop, Nadam, SGD, Adamax, Ftrl, Adadelta
 
 from libs.configmodule import saveconfig
 from libs.argparser import parser, checkarch, checkoptimizer, checklearningrate
@@ -86,7 +86,7 @@ def main():
     elif options.optimizer == "nadam":
         used_optimizer = Nadam
     elif options.optimizer == "rmsprop":
-        used_optimizer = RMSProp
+        used_optimizer = RMSprop
     elif options.optimizer == "sgd":
         used_optimizer = SGD
 
@@ -124,7 +124,7 @@ def createcnn(input_shape, n_output):
     """
     cnn_model = Sequential([
         Input(shape=input_shape),                                   # 128 x 87      | 128 x 44      |   O = output, I = input, H = kernel
-        Rot90(k=3),                                                 # 87 x 128      | 44 x 128      |   Rotate -90deg times (Matching the data structure with time)
+        Rot90(k=3),                                                 # 87 x 128      | 44 x 128      |   Rotate 90deg 3 times (270deg) (Matching the data structure with time)
         Conv1D(filters=64, kernel_size=7, activation='relu'),       # 81 x 64       | 38 x 64       |   (O_height = I_height - H_height + 1), n_filter
         MaxPool1D(pool_size=3),                                     # 27 x 64       | 12 x 64       |   (O_height = I_height / H_strides), I_depth
         Flatten(),
@@ -142,7 +142,7 @@ def creatednn(input_shape, n_output):
     """
     dnn_model = Sequential([
         Input(shape=input_shape),                                   # 128 x 87      | 128 x 44      |   O = output, I = input, H = kernel
-        Rot90(k=3),                                                 # 87 x 128      | 44 x 128      |   Rotate -90deg times (Matching the data structure with time)
+        Rot90(k=3),                                                 # 87 x 128      | 44 x 128      |   Rotate 90deg 3 times (270deg) (Matching the data structure with time)
         Flatten(),
         Dense(units=3400, activation='elu'),
         Dense(units=1020, activation='elu'),
@@ -159,9 +159,10 @@ def creaternn(input_shape, n_output):
     """
     rnn_model = Sequential([
         Input(shape=input_shape),                                   # 128 x 87      | 128 x 44      |   O = output, I = input, H = kernel
-        Rot90(k=3),                                                 # 87 x 128      | 44 x 128      |   Rotate -90deg times (Matching the data structure with time)
-        LSTM(input_shape[0], return_sequences=True),                #Using activation=tanh, recurrent_activation=sigmoid, recurrent_dropout=0, unroll=False, use_bias=True to use CUDNN
-        LSTM(input_shape[0]),
+        Rot90(k=3),                                                 # 87 x 128      | 44 x 128      |   Rotate 90deg 3 times (270deg) (Matching the data structure with time)
+        LSTM(128, return_sequences=True),                #Using activation=tanh, recurrent_activation=sigmoid, recurrent_dropout=0, unroll=False, use_bias=True to use CUDNN
+        LSTM(128, return_sequences=True),
+        LSTM(32),
         Dense(units=n_output, activation='softmax')
     ])
 
