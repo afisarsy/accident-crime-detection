@@ -3,7 +3,7 @@ import logging
 from pprint import pformat
 import asyncio
 
-from libs.argparser import checkthreshold
+from libs.argparser import parser, checkthreshold
 from libs.logger import initlogger
 from libs.configmodule import loadconfig
 from libs.michandler import Mic
