@@ -162,7 +162,8 @@ def creaternn(input_shape, n_output):
         Rot90(k=3),                                                 # 87 x 128      | 44 x 128      |   Rotate 90deg 3 times (270deg) (Matching the data structure with time)
         LSTM(128, return_sequences=True),                #Using activation=tanh, recurrent_activation=sigmoid, recurrent_dropout=0, unroll=False, use_bias=True to use CUDNN
         LSTM(128, return_sequences=True),
-        LSTM(32),
+        LSTM(128),
+        Dense(units=42, activation='elu'),
         Dense(units=n_output, activation='softmax')
     ])
 

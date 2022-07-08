@@ -5,7 +5,7 @@ import asyncio
 
 from libs.argparser import checkthreshold
 from libs.logger import initlogger
-from libs.configloader import loadconfig
+from libs.configmodule import loadconfig
 from libs.michandler import Mic
 from libs.audiomodule import Audio
 from libs.nnmodule import NN
