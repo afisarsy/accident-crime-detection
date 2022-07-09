@@ -5,7 +5,7 @@ import json
 
 import numpy as np
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Input, Conv1D, MaxPool1D, Flatten, Dense
+from tensorflow.keras.layers import Input, Conv1D, MaxPool1D, Flatten, Dense, LSTM
 from tensorflow.keras.optimizers import Adam, Adagrad, RMSprop, Nadam, SGD, Adamax, Ftrl, Adadelta
 
 from libs.configmodule import saveconfig
@@ -160,8 +160,7 @@ def creaternn(input_shape, n_output):
     rnn_model = Sequential([
         Input(shape=input_shape),                                   # 128 x 87      | 128 x 44      |   O = output, I = input, H = kernel
         Rot90(k=3),                                                 # 87 x 128      | 44 x 128      |   Rotate 90deg 3 times (270deg) (Matching the data structure with time)
-        LSTM(128, return_sequences=True),                #Using activation=tanh, recurrent_activation=sigmoid, recurrent_dropout=0, unroll=False, use_bias=True to use CUDNN
-        LSTM(128, return_sequences=True),
+        LSTM(128, return_sequences=True),                           #Using activation=tanh, recurrent_activation=sigmoid, recurrent_dropout=0, unroll=False, use_bias=True to use CUDNN
         LSTM(128),
         Dense(units=42, activation='elu'),
         Dense(units=n_output, activation='softmax')
