@@ -102,7 +102,7 @@ def main():
     logger.info('Test accuracy: %r', score[1])
 
     #Save model
-    model_path = OUTPUT_PATH + "/" + config["arch"].upper() + "_" + str(config["train-val ratio"]) + "_" + str(config["chunk duration"]) + "_" + str(config["cutoff"])
+    model_path = OUTPUT_PATH + "/" + config["arch"].upper() + "_" + str(config["train-val ratio"]) + "_" + str(config["segment duration"]) + "_" + str(config["cutoff"])
     if not os.path.exists(model_path):
         os.makedirs(model_path)
     output_path = model_path + "/" + options.optimizer.capitalize() + ("_%.1f" % (score[1]*100))
