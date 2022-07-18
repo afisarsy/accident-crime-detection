@@ -43,7 +43,7 @@ def main():
         "train-val ratio": dataset_conf["split"]["train ratio"],
         "epochs" : options.epochs,
         "sampling rate": dataset_conf["spectrogram"]["sampling rate"],
-        "chunk duration" : dataset_conf["spectrogram"]["chunk duration"],
+        "segment duration" : dataset_conf["spectrogram"]["chunk duration"],
         "overlap ratio": dataset_conf["spectrogram"]["overlap ratio"],
         "cutoff": dataset_conf["spectrogram"]["cutoff"],
         "order": dataset_conf["spectrogram"]["order"],
