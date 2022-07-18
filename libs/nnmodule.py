@@ -28,7 +28,7 @@ class NN:
     #Input buffer
     __buffer = []
 
-    def __init__(self, model_path, output_map, conf):
+    def __init__(self, model_path, custom_objects, output_map, conf):
         """
         Create Neural Network Object
         """
@@ -39,7 +39,12 @@ class NN:
         self.__output_map = output_map
         
         #NN initialization
-        self.__model = load_model(self.__model_path)
+        self.__model = load_model(self.__model_path, custom_objects)
+    
+    def getmodelinfo(self):
+        """
+        Print Model Summary
+        """
         self.__model.summary()
 
     def predict(self, x):
@@ -47,17 +52,16 @@ class NN:
         Predict x using loaded model
         """
         #Predict input x, verbose 0=silent, 1=progress bar, 2=single line
-        y = self.__model.predict(x=x, verbose=0)
+        y = self.__model.predict(x=np.array(x), verbose=0)
         return y
     
     def thresholding(self, y, th):
         """
         Threshold and mapping the prediction result
         """
-        most_confidence_index = int(np.argmax(y, axis=-1))
-        nn_result = self.__classes[most_confidence_index]
-        confidence = y[0][most_confidence_index]
-        output = self.__output_map[nn_result] if confidence >= th else list(self.__output_map.values())[0]
+        output = []
+        for nn_result in y:
+            output.append(self.__output_map[self.__classes[11 if np.max(nn_result) < th else np.argmax(nn_result)]])
         return output
     
     def add2buffer(self, x):
@@ -86,6 +90,16 @@ class NN:
         (x_test, y_test), classes = NN.__loaddata(dataset_path, "test")
 
         return (x_train, y_train), (x_val, y_val), (x_test, y_test), classes
+        
+    @staticmethod
+    def loaddatatest(dataset_path):
+        """
+        Load test data from specified path
+        """
+        logger.info("Loading test data")
+        (x_test, y_test), classes = NN.__loaddata(dataset_path, "test")
+
+        return (x_test, y_test), classes
     
     @staticmethod
     def __loaddata(path, data_type):

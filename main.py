@@ -8,7 +8,7 @@ from libs.logger import initlogger
 from libs.configmodule import loadconfig
 from libs.michandler import Mic
 from libs.audiomodule import Audio
-from libs.nnmodule import NN
+from libs.nnmodule import NN, Rot90
 
 logger = logging.getLogger(__name__)
 loop = asyncio.get_event_loop()
@@ -21,6 +21,7 @@ def main():
     options = initargparser()
     initlogger(options.log)
     config = loadconfig(options.model)
+    custom_objects = {"Rot90" : Rot90}
 
     logger.info("Using model %s", options.model)
     logger.info("Config : \n%s",pformat(config))
@@ -41,11 +42,15 @@ def main():
         "wind" : "normal",
         "car_crash" : "accident",
         "gun_shot" : "crime",
-        "scream" : "crime"
+        "jambret" : "crime",
+        "maling" : "crime",
+        "rampok" : "crime",
+        "scream" : "crime",
+        "tolong" : "crime"
     }
 
     #NN initialization
-    nn = NN(options.model, output_map, config)
+    nn = NN(options.model, custom_objects, output_map, config)
 
     #tasks declaration
     tasks = asyncio.gather(
@@ -74,15 +79,15 @@ async def featureextreaction(mic, nn, config, path):
         #Extract feature of available segments
         for segment in mic.popallsegments():
             #Apply bandpass filter
-            logger.info("Filtering segment")
+            logger.debug("Filtering segment")
             filtered_segment = Audio.bandpassfilter(segment, config["sampling rate"], config["cutoff"], config["order"])
 
             #Calculate the mel spectrogram
-            logger.info("Calculating mel spectrogram")
+            logger.debug("Calculating mel spectrogram")
             mel_spectrogram_db = Audio.getmelspectrogram(filtered_segment, config["sampling rate"], config["nfft"], config["hop length"], config["nmel"])
 
             #Normalization
-            logger.info("Data normalization")
+            logger.debug("Data normalization")
             normalized_spectrogram_db = Audio.normalize(mel_spectrogram_db)
 
             #Check input data
@@ -107,12 +112,16 @@ async def detection(mic, nn, th):
     while mic.stream.is_active():
         #Classification
         x = nn.popallbuffer()
-        y = nn.predict(x)
+        if len(x) > 0:
+            logger.info("Predicting %i batch of data", len(x))
+            y = nn.predict(x)
+            logger.debug("Prediction %s", y)
 
-        #Thresholding
-        #output = nn.threshold(y, th)
+            #Thresholding
+            output = nn.thresholding(y, th)
+            logger.info("Result : %s", output)
 
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(0.01)
 
 def initargparser():
     parser.add_argument(
