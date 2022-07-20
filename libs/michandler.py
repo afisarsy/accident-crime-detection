@@ -1,5 +1,6 @@
 import logging
 from pprint import pformat
+from datetime import datetime
 
 import numpy as np
 import pyaudio
@@ -92,8 +93,13 @@ class Mic:
         self.__CHUNK_COUNTER += 1
         if self.__CHUNK_COUNTER >= int(self.__CHUNKS_PER_SEGMENT * self.__overlap_ratio * (self.__segment_duration / 1000)):
             #Save collected chunks with total duration = config["segment duration"]
-            self.__segment.append(np.frombuffer(b''.join(self.__chunks), np.float32))
-            logger.info("Audio segment created")
+            segment_data = {
+                "segment" : np.frombuffer(b''.join(self.__chunks), np.float32),
+                "time" : datetime.now()
+            }
+            self.__segment.append(segment_data)
+            
+            logger.debug("Audio segment created")
 
             self.__CHUNK_COUNTER = 0
         return data, pyaudio.paContinue

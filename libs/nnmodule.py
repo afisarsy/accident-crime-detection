@@ -20,7 +20,6 @@ class NN:
     __model = None
 
     #Config
-    __arch = None
     __model_path = None
     __classes = []
     __output_map = []
@@ -34,11 +33,11 @@ class NN:
         """
         #Load config
         self.__model_path = model_path
-        self.__arch = conf["arch"]
         self.__classes = conf["classes"]
         self.__output_map = output_map
         
         #NN initialization
+        logger.info(self.__model_path)
         self.__model = load_model(self.__model_path, custom_objects)
     
     def getmodelinfo(self):
