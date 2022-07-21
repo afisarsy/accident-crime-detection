@@ -1,6 +1,7 @@
 import logging
 from pprint import pformat
 from datetime import datetime
+import sys
 from matplotlib.style import available
 
 import numpy as np
@@ -74,10 +75,10 @@ class Mic:
         """
         if id >= len(self.__available_devices) or id < 0:
             devices = {i: self.__available_devices[i] for i in range(0, len(self.__available_devices))}
-            logger.warning(
+            logger.error(
                 "Device with id %i not available, available devices:\n %s", id, pformat(devices)
             )
-            return 0
+            sys.exit(0)
         self.__selected_device_index = id
         self.getselecteddevice()
     

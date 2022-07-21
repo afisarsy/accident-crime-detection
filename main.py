@@ -56,7 +56,8 @@ def running():
 
     #mic initialization
     mic = Mic(config)
-    mic.selectdevice(2)
+    mic.selectdevice(options.mic_index)
+    mic.getselecteddevice()
     #start audio stream
     mic.startstream()
 
@@ -227,6 +228,17 @@ def runargs():
         help=(
             "Provide threhold value. "
             "TH must be a float between (0.0-1.0). "
+        ),
+    )
+    parser.add_argument(
+        "-mic",
+        "--mic-index",
+        metavar="MIC_INDEX",
+        type=int,
+        default=0,
+        help=(
+            "Select used microphone index from available microphone devices. "
+            "Use  main.py GET MIC  to get available microphone devices"
         ),
     )
     parser.add_argument(
