@@ -3,13 +3,12 @@ import argparse
 import logging
 import json
 
-import numpy as np
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Input, Conv1D, MaxPool1D, Flatten, Dense, LSTM
 from tensorflow.keras.optimizers import Adam, Adagrad, RMSprop, Nadam, SGD, Adamax, Ftrl, Adadelta
 
 from libs.configmodule import saveconfig
-from libs.argparser import parser, checkarch, checkoptimizer, checklearningrate
+from libs.argparser import parser, Range
 from libs.logger import initlogger
 from libs.nnmodule import NN, Rot90
 
@@ -172,7 +171,8 @@ def initargparser():
     parser.add_argument(
         "arch",
         metavar="ARCH",
-        type=checkarch,
+        type=str.lower,
+        choices=["cnn", "dnn", "rnn"],
         help=(
             "Provide NN architecture type. "
             "Available options CNN | DNN | RNN. "
@@ -181,7 +181,8 @@ def initargparser():
     parser.add_argument(
         "optimizer",
         metavar="OPTIMIZER",
-        type=checkoptimizer,
+        type=str.lower,
+        choices=["adadelta", "adagrad", "adam", "adamax", "ftrl", "nadam", "rmsprop", "sgd"],
         help=(
             "Provide model OPTIMIZER type. "
             "Available options Adadelta | Adagrad | Adam | Adamax | Ftrl | Nadam | RMSProp | SGD. "
@@ -209,8 +210,8 @@ def initargparser():
         "-lr",
         "--learning_rate",
         metavar="LR",
-        type=checklearningrate,
-        default=0.0001,
+        type=float,
+        choices=[Range(0.0, 1.0)],
         help=(
             "Provide learning rate value. "
         ),

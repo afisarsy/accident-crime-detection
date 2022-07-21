@@ -1,6 +1,7 @@
 import logging
 from pprint import pformat
 from datetime import datetime
+from matplotlib.style import available
 
 import numpy as np
 import pyaudio
@@ -57,13 +58,15 @@ class Mic:
         for i in range(0, int(self.__CHUNKS_PER_SEGMENT * (self.__segment_duration / 1000))):
             self.__chunks.append(silent_chunk)
 
-
-    def getdevices(self):
+    @staticmethod
+    def getdevices():
         """
         List available audio input devices
         """
-        for i in range(0, len(self.__available_devices)):
-            logger.debug("Input Device id %i - %s", i, self.__available_devices[i])
+        mic = pyaudio.PyAudio()
+        info = mic.get_host_api_info_by_index(0)
+        all_devices = info.get('deviceCount')
+        return [mic.get_device_info_by_host_api_device_index(0, i).get('name') for i in range(0, all_devices) if (mic.get_device_info_by_host_api_device_index(0, i).get('maxInputChannels')) > 1]
     
     def selectdevice(self, id):
         """

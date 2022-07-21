@@ -1,39 +1,16 @@
 import argparse
 import logging
 
-def checkthreshold(th):
-    try:
-        th = float(th)
-    except ValueError:
-        raise argparse.ArgumentTypeError("%r is not a float value" % th)
-
-    if not 0. <= th <= 1.:
-        raise argparse.ArgumentTypeError("%r must be a float between (0.0-1.0)" % th)
-    return th
-
-def checkarch(arch):
-    archs = ["cnn", "dnn", "rnn"]
-    arch = arch.lower()
-    if arch is None:
-        raise argparse.ArgumentTypeError("ARCH must be one of %r" % {' | '.join(archs.upper())})
-    return arch
-
-def checkoptimizer(optimizer):
-    optimizers = ["adadelta", "adagrad", "adam", "adamax", "ftrl", "nadam", "rmsprop", "sgd"]
-    optimizer = optimizer.lower()
-    if optimizer is None:
-        raise argparse.ArgumentTypeError("OPTIMIZER must be one of %r" % {' | '.join(optimizer.upper())})
-    return optimizer
-
-def checklearningrate(lr):
-    try:
-        lr = float(lr)
-    except ValueError:
-        raise argparse.ArgumentTypeError("%r is not a float value" % lr)
-
-    if not 0. < lr < 1.:
-        raise argparse.ArgumentTypeError("%r must be a float between (0.0-1.0)" % lr)
-    return lr
+class Range(object):
+    def __init__(self, start, end):
+        self.start = start
+        self.end = end
+    
+    def __eq__(self, other):
+        return self.start <= other <= self.end
+    
+    def __repr__(self):
+        return "[{0}, {1}]".format(self.start, self.end)
 
 def checkloglevel(log_level):
     levels = {

@@ -6,7 +6,9 @@ from datetime import datetime
 import asyncio
 import csv
 
-from libs.argparser import parser, checkthreshold
+from matplotlib.pyplot import get
+
+from libs.argparser import parser, Range
 from libs.logger import initlogger
 from libs.configmodule import loadconfig
 from libs.michandler import Mic
@@ -21,8 +23,20 @@ def main():
     Audio-based detection and crime detection system
     Realtime runtime system
     """
-    options = initargparser()
+    initargs()    
+    options = parser.parse_known_args()[0]
     initlogger(options.log)
+
+    if options.mode == "run":
+        running()
+    elif options.mode == "get":
+        get()
+
+def running():
+    runargs()
+    options = parser.parse_args()
+
+    options.model = options.model.replace("\\","/")
     config = loadconfig(options.model)
     custom_objects = {"Rot90" : Rot90}
     process_log_path = "Tests/save_log_process"
@@ -42,7 +56,6 @@ def main():
 
     #mic initialization
     mic = Mic(config)
-    mic.getdevices()
     mic.selectdevice(2)
     #start audio stream
     mic.startstream()
@@ -175,7 +188,29 @@ async def detection(mic, nn, th, csv_writer = None, log_process = False):
 
         await asyncio.sleep(0.01)
 
-def initargparser():
+def get():
+    getargs()
+    options = parser.parse_args()
+    logger.info(options)
+
+    if options.param == "mic":
+        available_devices = Mic.getdevices()
+        for i in range(0, len(available_devices)):
+            logger.info("Input Device id %i - %s", i, available_devices[i])
+
+def initargs():
+    parser.add_argument(
+        "mode",
+        metavar="MODE",
+        type=str.lower,
+        choices=["run", "get"],
+        help=(
+            "Select Program Mode. "
+            "Available options RUN | GET"
+        )
+    )
+
+def runargs():
     parser.add_argument(
         "model",
         metavar="MODEL_PATH",
@@ -187,7 +222,8 @@ def initargparser():
     parser.add_argument(
         "threshold",
         metavar="TH",
-        type=checkthreshold,
+        type=float,
+        choices=[Range(0.0, 1.0)],
         help=(
             "Provide threhold value. "
             "TH must be a float between (0.0-1.0). "
@@ -200,10 +236,19 @@ def initargparser():
             "Log processing time into xml file."
         )
     )
-    options = parser.parse_args()
-    options.model = options.model.replace("\\","/")
 
-    return options
+def getargs():
+    getparams = ["mic"]
+    parser.add_argument(
+        "param",
+        metavar="PARAM",
+        type=str.lower,
+        choices=getparams,
+        help=(
+            "Provide parameter you want to get. "
+            "MODEL_PATH must contain %s" % {' , '.join(getparams)}
+        ),
+    )
 
 if __name__ == '__main__':
     main()
