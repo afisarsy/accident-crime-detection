@@ -67,7 +67,11 @@ class Mic:
         mic = pyaudio.PyAudio()
         info = mic.get_host_api_info_by_index(0)
         all_devices = info.get('deviceCount')
-        return [mic.get_device_info_by_host_api_device_index(0, i).get('name') for i in range(0, all_devices) if (mic.get_device_info_by_host_api_device_index(0, i).get('maxInputChannels')) > 1]
+        mics = {}
+        for i in range(0, all_devices):
+            if (mic.get_device_info_by_host_api_device_index(0, i).get('maxInputChannels')) > 1:
+                mics[str(mic.get_device_info_by_host_api_device_index(0, i).get('index'))] = mic.get_device_info_by_host_api_device_index(0, i).get('name')
+        return mics
     
     def selectdevice(self, id):
         """

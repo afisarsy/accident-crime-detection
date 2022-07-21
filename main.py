@@ -43,7 +43,7 @@ def running():
     process_log_file = options.model[(options.model.rfind('/')+1):-3] + "_" + str(options.threshold) + "_" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".csv"
 
     logger.info("Using model %s", options.model)
-    logger.info("Config : \n%s",pformat(config))
+    logger.info("Loading Config File\nConfig : \n%s",pformat(config))
 
     #Log process initialization
     csv_writer = None
@@ -192,12 +192,10 @@ async def detection(mic, nn, th, csv_writer = None, log_process = False):
 def get():
     getargs()
     options = parser.parse_args()
-    logger.info(options)
 
     if options.param == "mic":
         available_devices = Mic.getdevices()
-        for i in range(0, len(available_devices)):
-            logger.info("Input Device id %i - %s", i, available_devices[i])
+        logger.info("Get I/O Devices\nAvailable Mics : \n%s", pformat(available_devices))
 
 def initargs():
     parser.add_argument(
