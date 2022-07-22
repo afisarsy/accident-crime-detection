@@ -1,4 +1,3 @@
-import argparse
 from asyncore import write
 import logging
 from pprint import pformat
@@ -6,7 +5,7 @@ from datetime import datetime
 import asyncio
 import csv
 
-from matplotlib.pyplot import get
+import numpy as np
 
 from libs.argparser import parser, Range
 from libs.logger import initlogger
@@ -50,7 +49,7 @@ def running():
     if options.log_process:
         log_process_file = open(process_log_path + "/" + process_log_file, 'w', newline='')
         #Write Header
-        header = ["time", "preprocessing start", "preprocessing finish", "detection start", "detection finish", "conclusion"]
+        header = ["time", "preprocessing start", "preprocessing finish", "detection start", "detection finish", "prediction", "confidence", "conclusion"]
         csv_writer = csv.DictWriter(log_process_file, header)
         csv_writer.writeheader()
 
@@ -83,7 +82,7 @@ def running():
     #tasks declaration
     tasks = asyncio.gather(
         loop.create_task(featureextreaction(mic, nn, config, "Tests/save_spectrogram/spectrogram", log_process=options.log_process)),
-        loop.create_task(detection(mic, nn, options.threshold, csv_writer=csv_writer, log_process=options.log_process))
+        loop.create_task(detection(mic, nn, options.threshold, config, csv_writer=csv_writer, log_process=options.log_process))
     )
 
     try:
@@ -147,7 +146,7 @@ async def featureextreaction(mic, nn, config, path = None, log_process = False):
 
         await asyncio.sleep(config["segment duration"] * config["overlap ratio"] / 1000)
 
-async def detection(mic, nn, th, csv_writer = None, log_process = False):
+async def detection(mic, nn, th, config, csv_writer = None, log_process = False):
     """
     Classification and Thresholding task
     """
@@ -168,8 +167,10 @@ async def detection(mic, nn, th, csv_writer = None, log_process = False):
             outputs = []
             for i, result in enumerate(results):
                 output = {
-                    "conclusion" : result,
                     "time" : buffer[i]["time"],
+                    "prediction" : config["classes"][np.argmax(y[i])],
+                    "confidence" : np.max(y[i]),
+                    "conclusion" : result
                 }
                 if log_process:
                     output["preprocessing start"] = buffer[i]["preprocessing start"]
@@ -195,7 +196,7 @@ def get():
 
     if options.param == "mic":
         available_devices = Mic.getdevices()
-        logger.info("Get I/O Devices\nAvailable Mics : \n%s", pformat(available_devices))
+        logger.info("Get I/O Devices\nAvailable audio input : \n%s", pformat(available_devices))
 
 def initargs():
     parser.add_argument(

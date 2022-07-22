@@ -2,7 +2,6 @@ import logging
 from pprint import pformat
 from datetime import datetime
 import sys
-from matplotlib.style import available
 
 import numpy as np
 import pyaudio
@@ -25,9 +24,7 @@ class Mic:
     #mic device params
     __mic = None
     __selected_device_index = 0
-    __info = None
-    __num_devices = 0
-    __available_devices = []
+    __available_devices = {}
 
     #stream params
     stream = None
@@ -43,9 +40,7 @@ class Mic:
         """
         #Mic initialization
         self.__mic = pyaudio.PyAudio()
-        self.__info = self.__mic.get_host_api_info_by_index(0)
-        self.__num_devices = self.__info.get('deviceCount')
-        self.__available_devices = [self.__mic.get_device_info_by_host_api_device_index(0, i).get('name') for i in range(0, self.__num_devices) if (self.__mic.get_device_info_by_host_api_device_index(0, i).get('maxInputChannels')) > 1]
+        self.__available_devices = Mic.getdevices()
 
         #Load scheme
         self.__sampling_rate = conf["sampling rate"]
@@ -77,10 +72,9 @@ class Mic:
         """
         Select audio input device to be used
         """
-        if id >= len(self.__available_devices) or id < 0:
-            devices = {i: self.__available_devices[i] for i in range(0, len(self.__available_devices))}
+        if str(id) not in self.__available_devices.keys():
             logger.error(
-                "Device with id %i not available, available devices:\n %s", id, pformat(devices)
+                "Device with id %i not available\nAvailable audio input : \n %s", id, pformat(self.__available_devices)
             )
             sys.exit(0)
         self.__selected_device_index = id
