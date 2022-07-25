@@ -85,9 +85,9 @@ class Mic:
         Return selected audio input device info
         """
         logger.info(
-            "Selected device %i - %s", self.__selected_device_index, self.__available_devices[self.__selected_device_index]
+            "Selected device %i - %s", self.__selected_device_index, self.__available_devices[str(self.__selected_device_index)]
         )
-        return {self.__selected_device_index: self.__available_devices[self.__selected_device_index]}
+        return {self.__selected_device_index: self.__available_devices[str(self.__selected_device_index)]}
     
     def streamdatacallback(self, data, frame_count, time_info, status):
         self.__chunks.append(data)
@@ -122,7 +122,7 @@ class Mic:
         )
         logger.info("Starting audio stream")
         self.stream.start_stream()
-        logger.info("Stream started using device %i - %s", self.__selected_device_index, self.__available_devices[self.__selected_device_index])
+        logger.info("Stream started using device %i - %s", self.__selected_device_index, self.__available_devices[str(self.__selected_device_index)])
 
     def stopstream(self):
         """
