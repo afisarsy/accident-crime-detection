@@ -1,10 +1,9 @@
 import os
-import argparse
 import logging
 import json
 
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Input, Conv1D, MaxPool1D, Flatten, Dense, LSTM
+from tensorflow.keras.layers import Input, Conv1D, MaxPool1D, Flatten, Dense, LSTM, Dropout
 from tensorflow.keras.optimizers import Adam, Adagrad, RMSprop, Nadam, SGD, Adamax, Ftrl, Adadelta
 
 from libs.configmodule import saveconfig
@@ -127,8 +126,9 @@ def createcnn(input_shape, n_output):
         Conv1D(filters=64, kernel_size=7, activation='relu'),       # 81 x 64       | 38 x 64       |   (O_height = I_height - H_height + 1), n_filter
         MaxPool1D(pool_size=3),                                     # 27 x 64       | 12 x 64       |   (O_height = I_height / H_strides), I_depth
         Flatten(),
-        Dense(units=512, activation='elu'),
-        Dense(units=128, activation='elu'),
+        Dense(units=512, activation='relu'),
+        Dropout(.15),
+        Dense(units=128, activation='relu'),
         Dense(units=n_output, activation='softmax')
     ])
 
@@ -143,9 +143,10 @@ def creatednn(input_shape, n_output):
         Input(shape=input_shape),                                   # 128 x 87      | 128 x 44      |   O = output, I = input, H = kernel
         Rot90(k=3),                                                 # 87 x 128      | 44 x 128      |   Rotate 90deg 3 times (270deg) (Matching the data structure with time)
         Flatten(),
-        Dense(units=3400, activation='elu'),
-        Dense(units=1020, activation='elu'),
-        Dense(units=306, activation='elu'),
+        Dense(units=900, activation='relu'),
+        Dropout(.15),
+        Dense(units=300, activation='relu'),
+        Dense(units=100, activation='relu'),
         Dense(units=n_output, activation='softmax')
     ])
 
@@ -161,7 +162,8 @@ def creaternn(input_shape, n_output):
         Rot90(k=3),                                                 # 87 x 128      | 44 x 128      |   Rotate 90deg 3 times (270deg) (Matching the data structure with time)
         LSTM(128, return_sequences=True),                           #Using activation=tanh, recurrent_activation=sigmoid, recurrent_dropout=0, unroll=False, use_bias=True to use CUDNN
         LSTM(128),
-        Dense(units=42, activation='elu'),
+        Dense(units=42, activation='relu'),
+        Dropout(.15),
         Dense(units=n_output, activation='softmax')
     ])
 

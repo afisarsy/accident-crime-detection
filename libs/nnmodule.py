@@ -4,6 +4,7 @@ import logging
 import random
 
 import numpy as np
+from scipy.ndimage import gaussian_filter, convolve
 from tensorflow.keras.layers import Layer
 from tensorflow.keras.models import load_model
 from tensorflow.keras.utils import to_categorical
@@ -77,31 +78,31 @@ class NN:
         return x
 
     @staticmethod
-    def loaddataset(dataset_path):
+    def loaddataset(dataset_path, intensity_th = None):
         """
         Load dataset from specified path
         """
         logger.info("Loading train data")
-        (x_train, y_train), classes = NN.__loaddata(dataset_path, "train")
+        (x_train, y_train), classes = NN.__loaddata(dataset_path, "train", intensity_th)
         logger.info("Loading validation data")
-        (x_val, y_val), classes = NN.__loaddata(dataset_path, "val")
+        (x_val, y_val), classes = NN.__loaddata(dataset_path, "val", intensity_th)
         logger.info("Loading test data")
-        (x_test, y_test), classes = NN.__loaddata(dataset_path, "test")
+        (x_test, y_test), classes = NN.__loaddata(dataset_path, "test", intensity_th)
 
         return (x_train, y_train), (x_val, y_val), (x_test, y_test), classes
         
     @staticmethod
-    def loaddatatest(dataset_path):
+    def loaddatatest(dataset_path, intensity_th = None):
         """
         Load test data from specified path
         """
         logger.info("Loading test data")
-        (x_test, y_test), classes = NN.__loaddata(dataset_path, "test")
+        (x_test, y_test), classes = NN.__loaddata(dataset_path, "test", intensity_th)
 
         return (x_test, y_test), classes
     
     @staticmethod
-    def __loaddata(path, data_type):
+    def __loaddata(path, data_type, intensity_th):
         """
         Load certain data_type of data (train, val, test)
         """
@@ -123,6 +124,11 @@ class NN:
 
                     #Normalize data
                     spectrogram = spectrogram / 255.
+
+                    #ratio-based intensity thresholding
+                    if intensity_th is not None:
+                        spectrogram = NN.RbIT(spectrogram, intensity_th)
+
                     data.append([spectrogram, label_index])
                 except FileNotFoundError:
                     logger.warn("Failed to load image %s", file_path)
@@ -139,6 +145,20 @@ class NN:
         y = np.array(to_categorical(y, len(classes)))
 
         return (x, y), classes
+
+    @staticmethod
+    def RbIT(image, intensity_th):
+        """
+        Ratio-based Intensity Threholding
+        """
+        gaussian_kernel = np.ones((3, 3))
+        gaussian_kernel = gaussian_filter(gaussian_kernel, 17)
+
+        buffer_image = np.copy(image)
+        buffer_image[buffer_image < intensity_th] *= 0.47
+
+        filtered_image = convolve(buffer_image, gaussian_kernel)
+        return filtered_image
 
 class Rot90(Layer):
     """

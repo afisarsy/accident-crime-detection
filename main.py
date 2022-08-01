@@ -1,4 +1,3 @@
-from asyncore import write
 import logging
 from pprint import pformat
 from datetime import datetime
