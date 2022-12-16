@@ -1,0 +1,93 @@
+#!/usr/bin/env node
+let env = require('dotenv').config();
+let dataFunction = require('../functions/dataFunction');
+
+/**
+ * Override if not specified
+ */
+process.env['NODE_ENV'] = process.env.NODE_ENV || global.env.NODE_ENV;
+process.env['DEBUG'] = process.env.DEBUG || 'app:*';
+
+/**
+ * All configurations
+ */
+if(process.env.NODE_ENV === 'development')	console.debug(env.parsed);
+
+/**
+ * Module dependencies.
+ */
+
+let app = require('../handler/webHandler');
+let serverDebug = require('debug')('app:server');
+let http = require('http');
+
+let mqtt = require('../handler/mqttHandler');
+
+/**
+ * Get port from environment and store in Express.
+ */
+
+let port = dataFunction.normalizePort(process.env.PORT || '3000');
+app.set('port', port);
+
+/**
+ * Set server address
+ */
+
+let address = process.env.HOST || '0.0.0.0';
+
+/**
+ * Create HTTP server.
+ */
+
+let server = http.createServer(app);
+
+/**
+ * Listen on provided port, on all network interfaces.
+ */
+
+server.listen(port, address);
+server.on('error', onError);
+server.on('listening', onListening);
+
+/**
+ * Normalize a port into a number, string, or false.
+ */
+
+/**
+ * Event listener for HTTP server "error" event.
+ */
+
+function onError(error) {
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  let bind = typeof port === 'string'
+    ? 'Pipe ' + port
+    : 'Port ' + port;
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case 'EACCES':
+      console.error(bind + ' requires elevated privileges');
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      console.error(bind + ' is already in use');
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+
+function onListening() {
+  let addr = server.address().address;
+  let port = server.address().port;
+  serverDebug('Listening on ' + addr + ':' + port);
+}

@@ -1,0 +1,67 @@
+#!/usr/bin/env node
+
+var env = require('dotenv').config();
+global.env = env.parsed;
+
+function test_mysql(argv){
+	console.info('Testing mysql with parameter ')
+	console.info(argv);
+
+	let mysql = require('../models/mysql');
+	mysql.test(argv);
+}
+
+function test_function(argv){
+	console.info('Testing function with parameter ')
+	console.info(argv);
+
+	let mysqlFunction = require('../functions/mysqlFunction');
+	let dictFunction = require('../functions/dictFunction');
+	let jsonTest = {a:'123', b:345, c:'455'};
+
+	console.log(mysqlFunction.dict2Query(jsonTest));
+	console.log(mysqlFunction.dict2InsertQuery({a:'123', b:345, c:'455', id: '%id'}));
+	console.log(mysqlFunction.dict2Condition(jsonTest));
+	console.log(dictFunction.removeKeys(jsonTest, ['c', 'a']));
+	console.log(dictFunction.modifyKeys(jsonTest, {c: 678, d:'945'}));
+	console.log(dictFunction.intStringParse({a:'248', b:'314', c: '(577'}));
+}
+
+function test_mqtt(argv){
+	console.info('Testing mqtt with parameter ')
+	console.info(argv);
+	let Location = require('../models/locationModel')
+	let jsonTest = {lng: 0.32131312, lat: 1.32131331, status: 'normal'};
+
+	Location.publishLocation(argv[0], argv[1], argv[3] || jsonTest);
+	return;
+}
+
+function test_all(){
+	console.info('Testing all module in sequence');
+}
+
+function help(){
+	console.info('Help ');
+}
+
+function main(){
+	if(process.argv.length === 2){
+		console.error('Expected at least one argument!');
+		process.exit(1);
+	}
+
+	//module selection
+    let module = process.argv[2];
+	if(process.argv.length > 3)	module_argv = process.argv.slice(3);    //ignore the first 3 (node, path, and module selection)
+
+    if(module === 'all')				test_all();
+	else if(module === 'mysql')			test_mysql(module_argv);
+	else if(module === 'function')		test_function(module_argv);
+	else if(module === 'mqtt')			test_mqtt(module_argv);
+	else								help();
+
+	//process.exit(1);
+}
+
+main();
