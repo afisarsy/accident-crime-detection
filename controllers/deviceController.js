@@ -1,10 +1,26 @@
+let Response = require('../models/responseModel');
 let Device = require('../models/deviceModel');
 
 exports.create = (req, res) => {
-    if (!req.body) {
-        res.status(400).send({
-            message: "Content can\'t be empty!"
-        });
+    var ip = (req.headers['x-forwarded-for'] || req.connection.remoteAddress || '').split(',')[0].trim();
+    var route = req.baseUrl + req.path;
+
+    let input_errors = [];
+    if (!req.body.device_id) {
+        input_errors.push("missing device_id data");
+    }
+    if (!req.body.owner_id) {
+        input_errors.push("missing owner_id data");
+    }
+    if (!req.body.name) {
+        input_errors.push("missing name data");
+    }
+
+    if (input_errors.length > 0){
+        var code = 400;
+        let response = new Response(code, null, {input: input_errors});
+        console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(input_errors), req);
+        res.status(code).send(response);
         return;
     }
 
@@ -12,104 +28,202 @@ exports.create = (req, res) => {
         device_id: req.body.device_id,
         owner_id: req.body.owner_id,
         name: req.body.name,
-        description: req.body.description,
+        description: req.body.description || "",
         last_loc_id: ""
     });
 
     Device.create(device, (err, data) => {
         if (err) {
-            res.status(500).send({
-                message: err.message || "Error occurred, failed to create device"
-            });
+            message = null;
+            if (err.code == 404){
+                if (err.type == "DEVICE_CREATE_0_ROW"){
+                    message = ["owner id not found, failed to create device"];
+                }
+            }
+
+            console.error("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
+            
+            var response = new Response(err.code, null, message)
+            res.status(err.code).send(response);
         } else {
-            res.send(data);
+            var code = 200;
+            let response = new Response(code, data, null);
+            console.log("%d - %s from %s | Device created: %s", code, route, ip, data);
+            res.send(response);
         }
     })
 }
 
 exports.findAll = (req, res) => {
+    var ip = (req.headers['x-forwarded-for'] || req.connection.remoteAddress || '').split(',')[0].trim();
+    var route = req.baseUrl + req.path;
+
     Device.getAll((err, data) => {
         if (err) {
-            res.status(500).send({
-                message: err.message || "Error occurred, failed to get devices"
-            });
+            message = null;
+            if (err.code == 500){
+                console.error("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
+            }
+            else if (err.code == 404){
+                if (err.type == "DEVICE_GET_0_ROW"){
+                    console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
+                    message = ["No device found"];
+                }
+            }
+            
+            var response = new Response(err.code, null, message)
+            res.status(err.code).send(response);
         } else {
-            res.send(data);
+            var code = 200;
+            let response = new Response(code, data, null);
+            console.log("%d - %s from %s | Devices: %s", code, route, ip, data);
+            res.send(response);
         }
     })
 }
 
 exports.findUserDevices = (req, res) => {
+    var ip = (req.headers['x-forwarded-for'] || req.connection.remoteAddress || '').split(',')[0].trim();
+    var route = req.baseUrl + req.path;
+
+    let input_errors = [];
     if (!req.params.ownerId) {
-        res.status(400).send({
-            message: "Owner id can\'t be empty!"
-        });
+        input_errors.push("missing parameter owner_id");
+    }
+
+    if (input_errors.length > 0){
+        var code = 400;
+        let response = new Response(code, null, {input: input_errors});
+        console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(input_errors), req);
+        res.status(code).send(response);
         return;
     }
 
     Device.findByOwnerId(req.params.ownerId, (err, data) => {
         if (err){
-            if (err.reason === "not_found") {
-                res.status(404).send({
-                    message: "Device with ownerId " + req.params.ownerId + " not found"
-                });
-            } else {
-                res.status(500).send({
-                    message: err.message || "Error occured, failed to get device with ownerId " + req.params.ownerId
-                });
+            message = null;
+            if (err.code == 500){
+                console.error("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
             }
+            else if (err.code == 404){
+                if (err.type == "DEVICE_GET_BY_OWNER_0_ROW"){
+                    console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
+                    message = ["No device found for user " + req.params.ownerId];
+                }
+            }
+            
+            var response = new Response(err.code, null, message)
+            res.status(err.code).send(response);
         } else {
-            res.send(data);
+            var code = 200;
+            let response = new Response(code, data, null);
+            console.log("%d - %s from %s | User %s Devices: %s", code, route, ip, req.params.ownerId, data);
+            res.send(response);
         }
     });
 }
 
 exports.update = (req, res) => {
-    if (!req.body || !req.params.id) {
-        res.status(400).send({
-            message: "Content can\'t be empty!"
-        });
+    var ip = (req.headers['x-forwarded-for'] || req.connection.remoteAddress || '').split(',')[0].trim();
+    var route = req.baseUrl + req.path;
+
+    let input_errors = [];
+    if (!req.params.id){
+        input_errors.push("missing parameter device_id");
+    }
+
+    if (input_errors.length > 0){
+        var code = 400;
+        let response = new Response(code, null, {input: input_errors});
+        console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(input_errors), req);
+        res.status(code).send(response);
+        return;
+    }
+    
+    var update_data = {};
+
+    if (req.body.device_id)
+        update_data.device_id = req.body.device_id;
+    
+    if (req.body.name)
+        update_data.name = req.body.name;
+    
+    if (req.body.description)
+        update_data.description = req.body.description;
+    
+    if (Object.keys(update_data).length === 0){
+        input_errors.push("No valid data found");
+        input_errors.push("Acceptable data: device_id, name, description");
+        var code = 400;
+        let response = new Response(code, null, {input: input_errors});
+        console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s", err.code, route, ip, response.status, JSON.stringify(input_errors));
+        res.status(code).send(response);
         return;
     }
 
-    Device.updateById(req.params.id, req.body, (err, data) => {
+    Device.updateById(req.params.id, update_data, (err, data) => {
         if (err){
-            if (err.reason === "not_found") {
-                res.status(404).send({
-                    message: "Device with id " + req.params.id + " not found"
-                });
-            } else {
-                res.status(500).send({
-                    message: err.message || "Error occured, failed to update device with id " + req.params.id
-                });
+            message = null;
+            if (err.code == 500){
+                console.error("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
             }
+            else if (err.code == 400){
+                console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
+                message = [err.error];
+            }
+            else if (err.code == 404){
+                console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
+                message = ["No device found for user " + req.params.ownerId];
+            }
+
+            var response = new Response(err.code, null, message)
+            res.status(err.code).send(response);
         } else {
-            res.send(data);
+            var code = 200;
+            let response = new Response(code, data, null);
+            console.log("%d - %s from %s | Device %s Updated to: %s", code, route, ip, req.params.id, data);
+            res.send(response);
         }
     });
 }
 
-exports.delete = (req, res) => {    
+exports.delete = (req, res) => {
+    var ip = (req.headers['x-forwarded-for'] || req.connection.remoteAddress || '').split(',')[0].trim();
+    var route = req.baseUrl + req.path;
+
+    let input_errors = [];
     if (!req.params.id) {
-        res.status(400).send({
-            message: "Device id can\'t be empty!"
-        });
+        input_errors.push("missing parameter device_id");
+    }
+
+    if (input_errors.length > 0){
+        var code = 400;
+        let response = new Response(code, null, {input: input_errors});
+        console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(input_errors), req);
+        res.status(code).send(response);
         return;
     }
 
     Device.removeById(req.params.id, (err, data) => {
         if (err){
-            if (err.reason === "not_found") {
-                res.status(404).send({
-                    message: "Device with id " + req.params.id + " not found"
-                });
-            } else {
-                res.status(500).send({
-                    message: err.message || "Error occured, failed to delete device with id " + req.params.id
-                });
+            message = null;
+            if (err.code == 500){
+                console.error("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
             }
+            else if (err.code == 404){
+                if (err.type == "DEVICE_DELETE_BY_ID_0_ROW"){
+                    console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
+                    message = ["No device found"];
+                }
+            }
+
+            var response = new Response(err.code, null, message)
+            res.status(err.code).send(response);
         } else {
-            res.send(data);
+            var code = 200;
+            let response = new Response(code, null, null);
+            console.log("%d - %s from %s | Device deleted: %s", code, route, ip, req.params.id);
+            res.send(response);
         }
     });
 }

@@ -1,4 +1,5 @@
 let mysql = require('./mysql');
+let mysqlError = require('../models/errorModel').mysqlError;
 let mysqlFunction = require('../functions/mysqlFunction');
 let dictFunction = require('../functions/dictFunction');
 
@@ -11,102 +12,118 @@ let Device = function(device) {
 }
 
 Device.create = (newDevice, result) => {
-    mysql.query("INSERT INTO devices " + mysqlFunction.dict2InsertSelectQuery(dictFunction.modifyKeys(newDevice, {owner_id: "%users.id"})) + " FROM users WHERE id = '" + newDevice.owner_id + "'", (err, res) => {
-        mysql.query("SELECT id FROM devices WHERE " + mysqlFunction.dict2Condition(newDevice), (err2, res2) => {
+    var insert_device_query = "INSERT INTO devices " + mysqlFunction.dict2InsertSelectQuery(dictFunction.modifyKeys(newDevice, {owner_id: "%users.id"})) + " FROM users WHERE id = '" + newDevice.owner_id + "'";
+    mysql.query(insert_device_query, (err, res) => {
+        var get_inserted_id_query = "SELECT id FROM devices WHERE " + mysqlFunction.dict2Condition(newDevice);
+        mysql.query(get_inserted_id_query, (err2, res2) => {
             if(err){
-                console.error("error: ", err);
-                result(err, null);
+                result({code: 500, type: "DEVICE_CREATE", error: err, query: insert_device_query}, null);
                 return;
             }
             else if(res.affectedRows < 1){                
-                result({ reason: "not found", message: "No matching owner id" }, null);
+                result({ code: 404, type: "DEVICE_CREATE_0_ROW", error: "Insert affect 0 row", query: insert_device_query}, null);
                 return;
             }
             if(err2){
-                console.error("error: ", err2);
+                result({code: 500, type: "DEVICE_GET_ID", error: err2, query: get_inserted_id_query}, null);
+                return;
             }
     
-            console.log("User created: ", {id: res2[0].id, ...newDevice});
             result(null, {id: res2[0].id, ...newDevice});
         });
     });
 };
 
-Device.findByOwnerId = (ownerId, result) => {
-    mysql.query("SELECT id, device_id, owner_id, name, description, locations.doc AS data FROM devices INNER JOIN locations ON devices.last_loc_id=locations._id WHERE owner_id = ?", [ownerId], (err, res) => {
+Device.getAll = (result) => {
+    var get_all_devices_query = "SELECT id, device_id, owner_id, name, description, locations.doc AS last_location FROM devices LEFT JOIN locations ON devices.last_loc_id=locations._id";
+    mysql.query(get_all_devices_query, (err, res) => {
         if(err){
-            console.error("error: ", err);
-            result(err, null);
+            result({code: 500, type: "DEVICE_GET_ALL", error: err, query: get_all_devices_query}, null);
             return;
         }
 
-        if (res.length) {
-            console.log("Devices found: ", res);
-            //Remove duplicate data from Doc
-            res.forEach(row => {
-                delete row.data['_id'];
-                delete row.data['ownerId'];
-                delete row.data['deviceId'];
-            });
-            result(null, res);
+        if(res.length == 0){
+            result({code: 404, type: "DEVICE_GET_0_ROW", error: "No Devices found", query: get_all_devices_query}, null);
             return;
         }
 
-        result({ reason: "not_found" }, null);
+        //Remove unnecessary cols from Doc
+        res.forEach(row => {
+            if (row.last_location != null){
+                delete row.last_location['_id'];
+                delete row.last_location['ownerId'];
+                delete row.last_location['deviceId'];
+            }
+            else{
+                row.last_location = "No Data"
+            }
+        });
+        result(null, res);
     });
 };
 
-Device.getAll = (result) => {
-    mysql.query("SELECT id, device_id, owner_id, name, description, locations.doc AS data FROM devices INNER JOIN locations ON devices.last_loc_id=locations._id", (err, res) => {
+Device.findByOwnerId = (ownerId, result) => {
+    var get_devices_by_owner_query = "SELECT id, device_id, owner_id, name, description, locations.doc AS last_location FROM devices LEFT JOIN locations ON devices.last_loc_id=locations._id WHERE owner_id = ?";
+    mysql.query(get_devices_by_owner_query, [ownerId], (err, res) => {
         if(err){
-            console.error("error: ", err);
-            result(err, null);
+            result({code: 500, type: "DEVICE_GET_BY_OWNER", error: err, query: get_devices_by_owner_query}, null);
             return;
         }
 
-        console.log("Devices found: ", res);
-        //Remove duplicate data from Doc
+        if(res.length == 0){
+            result({code: 404, type: "DEVICE_GET_BY_OWNER_0_ROW", error: "No Devices found", query: get_devices_by_owner_query}, null);
+            return;
+        }
+
+        //Remove unnecessary cols from Doc
         res.forEach(row => {
-            delete row.data['_id'];
-            delete row.data['ownerId'];
-            delete row.data['deviceId'];
+            if (row.last_location != null){
+                delete row.last_location['_id'];
+                delete row.last_location['ownerId'];
+                delete row.last_location['deviceId'];
+            }
+            else{
+                row.last_location = "No Data"
+            }
         });
         result(null, res);
     });
 };
 
 Device.updateById = (id, newValue, result) => {
-    mysql.query("UPDATE devices SET " + mysqlFunction.dict2Query(newValue) + "WHERE id = ?", [id], (err, res) => {
+    var update_device_query = "UPDATE devices SET " + mysqlFunction.dict2Query(newValue) + "WHERE id = \'" + id + "\'";
+    mysql.query(update_device_query, (err, res) => {
         if(err){
-            console.error("error: ", err);
-            result(err, null);
+            if (err.code == "ER_DUP_ENTRY"){
+                result({code: 400, type: "DEVICE_UPDATE_BY_ID", error: {input: "Duplicate device_id"}, query: update_device_query}, null);
+                return    
+            }
+            result({code: 500, type: "DEVICE_UPDATE_BY_ID", error: err, query: update_device_query}, null);
             return;
         }
 
         if(res.affectedRows == 0){
-            result({ reason: "not_found" }, null);
+            result({code: 404, type: "DEVICE_UPDATE_BY_ID_0_ROW", error: "No Devices found", query: update_device_query}, null);
             return;
         }
 
-        console.log("Device updated: ", {id: id, ...newValue});
         result(null, {id: id, ...newValue});
     });
 };
 
 Device.removeById = (id, result) => {
-    mysql.query("DELETE FROM devices WHERE id = ?", [id], (err, res) => {
+    var delete_device_query = "DELETE FROM devices WHERE id = \'" + id + "\'";
+    mysql.query(delete_device_query, (err, res) => {
         if(err){
-            console.error("error: ", err);
-            result(err, null);
+            result({code: 500, type: "DEVICE_DELETE_BY_ID", error: err, query: delete_device_query}, null);
             return;
         }
 
         if(res.affectedRows == 0){
-            result({ reason: "not_found" }, null);
+            result({code: 404, type: "DEVICE_DELETE_BY_ID_0_ROW", error: "No Devices found", query: delete_device_query}, null);
             return;
         }
 
-        console.log("Device deleted: ", res.affectedRows);
         result(null, res);
     });
 };
