@@ -17,6 +17,10 @@ Device.create = (newDevice, result) => {
         var get_inserted_id_query = "SELECT id FROM devices WHERE " + mysqlFunction.dict2Condition(newDevice);
         mysql.query(get_inserted_id_query, (err2, res2) => {
             if(err){
+                if (err.code == "ER_DUP_ENTRY"){
+                    result({code: 400, type: "DEVICE_CREATE_DUPLICATE", error: "Duplicate device_id", query: insert_device_query}, null);
+                    return    
+                }
                 result({code: 500, type: "DEVICE_CREATE", error: err, query: insert_device_query}, null);
                 return;
             }
@@ -95,7 +99,7 @@ Device.updateById = (id, newValue, result) => {
     mysql.query(update_device_query, (err, res) => {
         if(err){
             if (err.code == "ER_DUP_ENTRY"){
-                result({code: 400, type: "DEVICE_UPDATE_BY_ID", error: {input: "Duplicate device_id"}, query: update_device_query}, null);
+                result({code: 400, type: "DEVICE_UPDATE_BY_ID_DUPLICATE", error: "Duplicate device_id", query: update_device_query}, null);
                 return    
             }
             result({code: 500, type: "DEVICE_UPDATE_BY_ID", error: err, query: update_device_query}, null);

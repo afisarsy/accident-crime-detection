@@ -7,19 +7,27 @@ module.exports.findByDeviceId = (deviceId, result, limit = 7) => {
 	.then((session) => {
         let collection = session.getDefaultSchema().getCollection("locations");
 		let docs = [];
-        collection.find("deviceId = :devId").bind("devId", deviceId).sort('_id desc').limit(limit).execute(doc => docs.push(doc))
+
+        var query = collection.find("deviceId = :devId").bind("devId", deviceId).sort('_id desc').limit(limit);
+		var find_location_query = {
+			schema: query.getSchema().getName(),
+			collection: query.getTableName(),
+			criteria: query.getCriteria(),
+			bindings: query.getBindings(),
+			sort: query.getOrderings(),
+			limit: limit
+		}
+		query.execute(doc => docs.push(doc))
 		.then(() => {
-			if(docs.length) {
-				console.log(docs.length,"location/s found");
-				result(null, docs);
-				return;
+			if(docs.length == 0) {
+				result({code: 404, type: "LOCATION_FIND_BY_DEVICE_ID_0_ROW", error: "No locations found", query: find_location_query}, null);
+            	return;
 			}
 			
-			result(null, []);	//No location have been stored
+			result(null, docs);
 		})
 		.catch(err => {
-			console.error("error: ", err);
-			result(err, null);
+			result({code: 500, type: "LOCATION_FIND_BY_DEVICE_ID", error: err, query: find_location_query}, null);
 		})
     })
 }

@@ -1,5 +1,6 @@
 let Response = require('../models/responseModel');
 let Device = require('../models/deviceModel');
+let debug = require('debug')('app:server:controller:device');
 
 exports.create = (req, res) => {
     var ip = (req.headers['x-forwarded-for'] || req.connection.remoteAddress || '').split(',')[0].trim();
@@ -35,10 +36,15 @@ exports.create = (req, res) => {
     Device.create(device, (err, data) => {
         if (err) {
             message = null;
-            if (err.code == 404){
-                if (err.type == "DEVICE_CREATE_0_ROW"){
-                    message = ["owner id not found, failed to create device"];
-                }
+            if (err.code == 500){
+                console.error("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
+            }
+            else if (err.code == 400){
+                console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
+                message = {input: [err.error]};
+            }
+            else if (err.code == 404){
+                message = {input: [`owner_id = ${req.body.owner_id} not found, failed to create device`]};
             }
 
             console.error("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
@@ -48,7 +54,7 @@ exports.create = (req, res) => {
         } else {
             var code = 200;
             let response = new Response(code, data, null);
-            console.log("%d - %s from %s | Device created: %s", code, route, ip, data);
+            debug("%d - %s from %s | Device created: %s", code, route, ip, data);
             res.send(response);
         }
     })
@@ -65,10 +71,8 @@ exports.findAll = (req, res) => {
                 console.error("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
             }
             else if (err.code == 404){
-                if (err.type == "DEVICE_GET_0_ROW"){
-                    console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
-                    message = ["No device found"];
-                }
+                console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
+                message = {msg: ["No device found"]};
             }
             
             var response = new Response(err.code, null, message)
@@ -76,7 +80,7 @@ exports.findAll = (req, res) => {
         } else {
             var code = 200;
             let response = new Response(code, data, null);
-            console.log("%d - %s from %s | Devices: %s", code, route, ip, data);
+            debug("%d - %s from %s | Devices: %s", code, route, ip, JSON.stringify(data));
             res.send(response);
         }
     })
@@ -106,10 +110,8 @@ exports.findUserDevices = (req, res) => {
                 console.error("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
             }
             else if (err.code == 404){
-                if (err.type == "DEVICE_GET_BY_OWNER_0_ROW"){
-                    console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
-                    message = ["No device found for user " + req.params.ownerId];
-                }
+                console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
+                message = {msg: [`No device found for user ${req.params.ownerId}`]};
             }
             
             var response = new Response(err.code, null, message)
@@ -117,7 +119,7 @@ exports.findUserDevices = (req, res) => {
         } else {
             var code = 200;
             let response = new Response(code, data, null);
-            console.log("%d - %s from %s | User %s Devices: %s", code, route, ip, req.params.ownerId, data);
+            debug("%d - %s from %s | User %s Devices: %s", code, route, ip, req.params.ownerId, JSON.stringify(data));
             res.send(response);
         }
     });
@@ -169,11 +171,11 @@ exports.update = (req, res) => {
             }
             else if (err.code == 400){
                 console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
-                message = [err.error];
+                message = {input: [err.error]};
             }
             else if (err.code == 404){
                 console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
-                message = ["No device found for user " + req.params.ownerId];
+                message = {msg: [`No device found for user ${req.params.ownerId}, failed to update device`]};
             }
 
             var response = new Response(err.code, null, message)
@@ -181,7 +183,7 @@ exports.update = (req, res) => {
         } else {
             var code = 200;
             let response = new Response(code, data, null);
-            console.log("%d - %s from %s | Device %s Updated to: %s", code, route, ip, req.params.id, data);
+            debug("%d - %s from %s | Device %s Updated to: %s", code, route, ip, req.params.id, data);
             res.send(response);
         }
     });
@@ -211,10 +213,8 @@ exports.delete = (req, res) => {
                 console.error("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
             }
             else if (err.code == 404){
-                if (err.type == "DEVICE_DELETE_BY_ID_0_ROW"){
-                    console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
-                    message = ["No device found"];
-                }
+                console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
+                message = {msg: ["No device found, failed to delete device"]};
             }
 
             var response = new Response(err.code, null, message)
@@ -222,7 +222,7 @@ exports.delete = (req, res) => {
         } else {
             var code = 200;
             let response = new Response(code, null, null);
-            console.log("%d - %s from %s | Device deleted: %s", code, route, ip, req.params.id);
+            debug("%d - %s from %s | Device deleted: %s", code, route, ip, req.params.id);
             res.send(response);
         }
     });

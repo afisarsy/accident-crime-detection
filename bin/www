@@ -21,8 +21,6 @@ let app = require('../handler/webHandler');
 let serverDebug = require('debug')('app:server');
 let http = require('http');
 
-let mqtt = require('../handler/mqttHandler');
-
 /**
  * Get port from environment and store in Express.
  */
