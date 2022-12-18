@@ -1,5 +1,6 @@
 let createError = require('http-errors');
 let express = require('express');
+let cors = require('cors')
 let path = require('path');
 let cookieParser = require('cookie-parser');
 let logger = require('morgan');
@@ -7,6 +8,8 @@ let logger = require('morgan');
 let usersRouter = require('../api/userApi');
 let devicesRouter = require('../api/deviceApi');
 let locationRouter = require('../api/locationApi');
+
+let Response = require('../models/responseModel');
 
 let app = express();
 
@@ -20,9 +23,16 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, '../public')));
 
-app.use('/users', usersRouter);
-app.use('/devices', devicesRouter);
-app.use('/location', locationRouter);
+app.use('/users', cors(), usersRouter);
+app.use('/devices', cors(), devicesRouter);
+app.use('/location', cors(), locationRouter);
+
+app.get('*', function (req, res) {
+  var code = 404;
+  let response = new Response(code, null, null)
+  res.status(code).send(response);
+  //return;
+})
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
