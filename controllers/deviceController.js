@@ -19,7 +19,7 @@ exports.create = (req, res) => {
 
     if (input_errors.length > 0){
         var code = 400;
-        let response = new Response(code, null, {input: input_errors});
+        let response = new Response(code, {input: input_errors}, null);
         console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(input_errors), req);
         res.status(code).send(response);
         return;
@@ -46,14 +46,12 @@ exports.create = (req, res) => {
             else if (err.code == 404){
                 message = {input: [`owner_id = ${req.body.owner_id} not found, failed to create device`]};
             }
-
-            console.error("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
             
-            var response = new Response(err.code, null, message)
+            var response = new Response(err.code, message, null);
             res.status(err.code).send(response);
         } else {
             var code = 200;
-            let response = new Response(code, data, null);
+            let response = new Response(code, null, data);
             debug("%d - %s from %s | Device created: %s", code, route, ip, data);
             res.send(response);
         }
@@ -75,11 +73,11 @@ exports.findAll = (req, res) => {
                 message = {msg: ["No device found"]};
             }
             
-            var response = new Response(err.code, null, message)
+            var response = new Response(err.code, message, null);
             res.status(err.code).send(response);
         } else {
             var code = 200;
-            let response = new Response(code, data, null);
+            let response = new Response(code, null, data);
             debug("%d - %s from %s | Devices: %s", code, route, ip, JSON.stringify(data));
             res.send(response);
         }
@@ -97,7 +95,7 @@ exports.findUserDevices = (req, res) => {
 
     if (input_errors.length > 0){
         var code = 400;
-        let response = new Response(code, null, {input: input_errors});
+        let response = new Response(code, {input: input_errors}, null);
         console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(input_errors), req);
         res.status(code).send(response);
         return;
@@ -114,11 +112,11 @@ exports.findUserDevices = (req, res) => {
                 message = {msg: [`No device found for user ${req.params.ownerId}`]};
             }
             
-            var response = new Response(err.code, null, message)
+            var response = new Response(err.code, message, null);
             res.status(err.code).send(response);
         } else {
             var code = 200;
-            let response = new Response(code, data, null);
+            let response = new Response(code, null, data);
             debug("%d - %s from %s | User %s Devices: %s", code, route, ip, req.params.ownerId, JSON.stringify(data));
             res.send(response);
         }
@@ -131,34 +129,34 @@ exports.update = (req, res) => {
 
     let input_errors = [];
     if (!req.params.id){
-        input_errors.push("missing parameter device_id");
+        input_errors.push("missing parameter id");
     }
 
     if (input_errors.length > 0){
         var code = 400;
-        let response = new Response(code, null, {input: input_errors});
+        let response = new Response(code, {input: input_errors}, null);
         console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(input_errors), req);
         res.status(code).send(response);
         return;
     }
     
     var update_data = {};
-
-    if (req.body.device_id)
+    if (req.body.device_id){
         update_data.device_id = req.body.device_id;
-    
-    if (req.body.name)
+    }
+    if (req.body.name){
         update_data.name = req.body.name;
-    
-    if (req.body.description)
+    }
+    if (req.body.description){
         update_data.description = req.body.description;
-    
+    }
+
     if (Object.keys(update_data).length === 0){
         input_errors.push("No valid data found");
         input_errors.push("Acceptable data: device_id, name, description");
         var code = 400;
-        let response = new Response(code, null, {input: input_errors});
-        console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s", err.code, route, ip, response.status, JSON.stringify(input_errors));
+        let response = new Response(code, {input: input_errors}, null);
+        console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(input_errors));
         res.status(code).send(response);
         return;
     }
@@ -178,11 +176,11 @@ exports.update = (req, res) => {
                 message = {msg: [`No device found for user ${req.params.ownerId}, failed to update device`]};
             }
 
-            var response = new Response(err.code, null, message)
+            var response = new Response(err.code, message, null);
             res.status(err.code).send(response);
         } else {
             var code = 200;
-            let response = new Response(code, data, null);
+            let response = new Response(code, null, data);
             debug("%d - %s from %s | Device %s Updated to: %s", code, route, ip, req.params.id, data);
             res.send(response);
         }
@@ -195,12 +193,12 @@ exports.delete = (req, res) => {
 
     let input_errors = [];
     if (!req.params.id) {
-        input_errors.push("missing parameter device_id");
+        input_errors.push("missing parameter id");
     }
 
     if (input_errors.length > 0){
         var code = 400;
-        let response = new Response(code, null, {input: input_errors});
+        let response = new Response(code, {input: input_errors}, null);
         console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(input_errors), req);
         res.status(code).send(response);
         return;
@@ -217,7 +215,7 @@ exports.delete = (req, res) => {
                 message = {msg: ["No device found, failed to delete device"]};
             }
 
-            var response = new Response(err.code, null, message)
+            var response = new Response(err.code, message, null);
             res.status(err.code).send(response);
         } else {
             var code = 200;

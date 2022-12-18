@@ -13,7 +13,7 @@ exports.findByDeviceId = (req, res) => {
     
     if (input_errors.length > 0){
         var code = 400;
-        let response = new Response(code, null, {input: input_errors});
+        let response = new Response(code, {input: input_errors}, null);
         console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(input_errors), req);
         res.status(code).send(response);
         return;
@@ -30,11 +30,11 @@ exports.findByDeviceId = (req, res) => {
                 message = {msg: ["No Data"]};
             }
 
-            var response = new Response(err.code, null, message)
+            var response = new Response(err.code, message, null);
             res.status(err.code).send(response);
         } else {
             var code = 200;
-            let response = new Response(code, data, null);
+            let response = new Response(code, null, data);
             debug("%d - %s from %s | Device %s Locations: %s", code, route, ip, req.params.deviceId, JSON.stringify(data));
             res.send(response);
         }

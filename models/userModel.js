@@ -8,105 +8,115 @@ let User = function(user) {
 }
 
 User.create = (newUser, result) => {
-    mysql.query("INSERT INTO users " + mysqlFunction.dict2InsertQuery(newUser), (err, res) => {
-        mysql.query("SELECT id FROM users WHERE " + mysqlFunction.dict2Condition(newUser), (err2, res2) => {
+    var insert_user_query = `INSERT INTO users ${mysqlFunction.dict2InsertQuery(newUser)}`;
+    mysql.query(insert_user_query, (err, res) => {
+        var get_inserted_user_id_query = `SELECT id FROM users WHERE ${mysqlFunction.dict2Condition(newUser)}`;
+        mysql.query(get_inserted_user_id_query, (err2, res2) => {
             if(err){
-                console.error("error: ", err);
-                result(err, null);
+                if (err.code == "ER_DUP_ENTRY"){
+                    result({code: 400, type: "USER_CREATE_DUPLICATE", error: "Username isn't available", query: insert_user_query}, null);
+                    return    
+                }
+                result({code: 500, type: "USER_CREATE", error: err, query: insert_user_query}, null);
                 return;
             }
             if(err2){
-                console.error("error: ", err2);
+                result({code: 500, type: "USER_GET_ID", error: err2, query: get_inserted_user_id_query}, null);
+                return;
             }
     
-            console.log("User created: ", {id: res2[0].id, ...newUser});
             result(null, {id: res2[0].id, ...newUser});
         });
     });
 };
 
-User.findById = (userId, result) => {
-    mysql.query("SELECT * FROM users WHERE id = ?", [userId], (err, res) => {
-        if(err){
-            console.error("error: ", err);
-            result(err, null);
-            return;
-        }
-
-        if (res.length) {
-            console.log("User found: ", res[0]);
-            result(null, res[0]);
-            return;
-        }
-
-        result({ reason: "not_found" }, null);
-    });
-};
-
-User.findByUserPass = (user, pass, result) => {   
-    mysql.query("SELECT * FROM users WHERE " + mysqlFunction.dict2Condition({'username':user, 'password':pass}), (err, res) => {
-        if(err){
-            console.error("error: ", err);
-            result(err, null);
-            return;
-        }
-
-        if (res.length) {
-            delete res[0]['password'];
-            console.log("User found: ", res[0]);
-            result(null, res[0]);
-            return;
-        }
-
-        result({ reason: "not_found" }, null);
-    });
-};
-
 User.getAll = (result) => {
-    mysql.query("SELECT * FROM users", (err, res) => {
+    var get_all_users_query = "SELECT * FROM users";
+    mysql.query(get_all_users_query, (err, res) => {
         if(err){
-            console.error("error: ", err);
-            result(err, null);
+            result({code: 500, type: "USER_GET_ALL", error: err, query: get_all_users_query}, null);
             return;
         }
 
-        console.log("Users found: ", res);
+        if(res.length == 0){
+            result({code: 404, type: "USER_GET_0_ROW", error: "No User found", query: get_all_users_query}, null);
+            return;
+        }
+
         result(null, res);
     });
 };
 
-User.updateById = (userId, newValue, result) => {
-    mysql.query("UPDATE users SET " + mysqlFunction.dict2Query(newValue) + "WHERE id = ?", userId, (err, res) => {
+User.findById = (id, result) => {
+    var get_user_by_user_id_query = `SELECT * FROM users WHERE id = '${id}'`;
+    mysql.query(get_user_by_user_id_query, (err, res) => {
         if(err){
-            console.error("error: ", err);
-            result(err, null);
+            result({code: 500, type: "USER_GET_BY_USER_ID", error: err, query: get_user_by_user_id_query}, null);
             return;
         }
 
-        if(res.affectedRows == 0){
-            result({ reason: "not_found" }, null);
+        if(res.length == 0){
+            result({code: 404, type: "USER_GET_BY_USER_ID_0_ROW", error: "User not found", query: get_user_by_user_id_query}, null);
             return;
         }
 
-        console.log("User updated: ", {id: userId, ...newValue});
-        result(null, {id: userId, ...newValue});
+        delete res[0]['password'];
+        result(null, res[0]);
     });
 };
 
-User.removeById = (userId, result) => {
-    mysql.query("DELETE FROM users WHERE id = ?", [userId], (err, res) => {
+User.findByUserPass = (user, pass, result) => {
+    var get_user_by_username_password_query = `SELECT * FROM users WHERE ${mysqlFunction.dict2Condition({'username':user, 'password':pass})}`;
+    mysql.query(get_user_by_username_password_query, (err, res) => {
         if(err){
-            console.error("error: ", err);
-            result(err, null);
+            result({code: 500, type: "USER_GET_BY_USERNAME_PASSWORD", error: err, query: get_user_by_username_password_query}, null);
+            return;
+        }
+
+        if(res.length == 0){
+            result({code: 404, type: "USER_GET_BY_USERNAME_PASSWORD_0_ROW", error: "Username-Password not found", query: get_user_by_username_password_query}, null);
+            return;
+        }
+
+        delete res[0]['password'];
+        result(null, res[0]);
+    });
+};
+
+User.updateById = (id, newValue, result) => {
+    var update_user_query = `UPDATE users SET ${mysqlFunction.dict2Query(newValue)} WHERE id = '${id}'`;
+    mysql.query(update_user_query, (err, res) => {
+        if(err){
+            if (err.code == "ER_DUP_ENTRY"){
+                result({code: 400, type: "USER_UPDATE_BY_ID_DUPLICATE", error: "Invalid username", query: update_user_query}, null);
+                return    
+            }
+            result({code: 500, type: "USER_UPDATE_BY_ID", error: err, query: update_user_query}, null);
             return;
         }
 
         if(res.affectedRows == 0){
-            result({ reason: "not_found" }, null);
+            result({code: 404, type: "USER_UPDATE_BY_ID_0_ROW", error: "No User found", query: update_user_query}, null);
             return;
         }
 
-        console.log("User deleted: ", res.affectedRows);
+        result(null, {id: id, ...newValue});
+    });
+};
+
+User.removeById = (id, result) => {
+    var delete_user_query = `DELETE FROM users WHERE id = '${id}'`;
+    mysql.query(delete_user_query, (err, res) => {
+        if(err){
+            result({code: 500, type: "USER_DELETE_BY_ID", error: err, query: delete_user_query}, null);
+            return;
+        }
+
+        if(res.affectedRows == 0){
+            result({code: 404, type: "USER_DELETE_BY_ID_0_ROW", error: "No User found", query: delete_user_query}, null);
+            return;
+        }
+
         result(null, res);
     });
 };

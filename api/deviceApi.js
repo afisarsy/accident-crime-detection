@@ -12,9 +12,9 @@ router.get('/:ownerId', deviceController.findUserDevices);
 router.post('/', deviceController.create);
 
 /* Update device by id */
-router.put('/:id', deviceController.update);
+router.put('/:id?', deviceController.update);
 
 /* Delete device by id */
-router.delete('/:id', deviceController.delete);
+router.delete('/:id?', deviceController.delete);
 
 module.exports = router;
