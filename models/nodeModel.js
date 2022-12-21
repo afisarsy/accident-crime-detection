@@ -1,7 +1,8 @@
 let mysqlx = require('./mysqlx');
+let mqtt = require('./mqtt');
 let mysqlFunction = require('../functions/mysqlFunction');
 
-module.exports.findByDeviceId = (deviceId, result, limit = 7) => {
+module.exports.findByDeviceId = (deviceId, limit, result) => {
     mysqlx.getSession()
 	.then((session) => {
         let collection = session.getDefaultSchema().getCollection("node_data");
@@ -34,8 +35,6 @@ module.exports.findByDeviceId = (deviceId, result, limit = 7) => {
 module.exports.store = (doc, result) => {
 	mysqlx.getSession()
 	.then((session) => {
-		let dataId;
-		session.startTransaction()
 		try{
 			let collection = session.getDefaultSchema().getCollection("node_data");
 			var query = collection.add(doc);
@@ -45,46 +44,66 @@ module.exports.store = (doc, result) => {
 				type: "STORE",
 				doc: doc
 			}
-			query.execute()
-			.then((storeQuery) => {
-				dataId = storeQuery.getGeneratedIds()[0];
-				session.sql('UPDATE devices SET ' +  mysqlFunction.dict2Query({ last_loc_id: dataId }) + ' WHERE id = \'' + doc.deviceId + '\'').execute()
-				.then((updateQuery) => {
-					if(updateQuery.getAffectedItemsCount() < 1)	throw {message: 'Failed to store device data'};
-				})
-				.then(() => {
-					session.commit();
-					console.log('data stored with id', dataId);
-					session.close();
-					result(null, {id: dataId});
-					return;
-				})
-				.catch((err) => {
-					console.error("error: ", err);
-					session.rollback();
-					session.close();
-					result(err, null);
-					return;
-				})
-			})
-			.catch((err) => {
-				console.error("error: ", err);
-				session.rollback();
-				session.close();
-				result(err, null);
-				return;
-			})
 		}
-		catch(err) {
-			console.error("error: ", err);
-			session.rollback();
+		catch(err){
 			session.close();
-			result(err, null);
+
+			result({type: "NODE_STORE_DATA_PREPARATION", error: err}, null);
 			return;
 		}
+		session.startTransaction()
+		query.execute()
+		.then((storeQuery) => {
+			let dataId = storeQuery.getGeneratedIds()[0];
+			var update_device_last_data_id_query = `UPDATE devices SET ${mysqlFunction.dict2Query({ last_data_id: dataId })} WHERE ${mysqlFunction.dict2Condition({id: doc.device_id})}`;
+			session.sql(update_device_last_data_id_query).execute()
+			.then((res) => {
+				if(res.getAffectedItemsCount() < 1){
+					session.rollback();
+					session.close();
+
+					result({type: "DEVICE_UPDATE_LAST_DATA_ID_0_ROW", error: `Device ${doc.device_id} not found`, query: update_device_last_data_id_query}, null);
+					return;
+				}
+
+				session.commit();
+				session.close();
+
+				result(null, {id: dataId});
+			})
+			.catch((err) => {
+				session.rollback();
+				session.close();
+
+				result({type: "DEVICE_UPDATE_LAST_DATA_ID", error: err, query: update_device_last_data_id_query}, null);
+				return;
+			})
+		})
+		.catch((err) => {
+			session.rollback();
+			session.close();
+
+			if (err.msg == "Document is missing a required field"){
+				result({type: "NODE_STORE_DATA_INVALID_FIELD", error: `Missing device_id field`, query: store_node_data_query}, null);
+			}
+
+			result({type: "NODE_STORE_DATA", error: err, query: store_node_data_query}, null);
+			return;
+		})
 	})
 	.catch((err) => {
-		console.error("error: ", err);
-		result(err, null);
+		result({type: "NODE_STORE_DATA_DB_SESSION", error: err}, null);
+	})
+}
+
+module.exports.publishData = (topic, data, result) => {
+	let message = JSON.stringify(data);
+	mqtt.publish(topic, message, (err, res) => {
+		if (err){
+			result({type: "NODE_DATA_PUBLISH", error: err, message: message}, null);
+			return;
+		}
+
+		result(null, res);
 	})
 }

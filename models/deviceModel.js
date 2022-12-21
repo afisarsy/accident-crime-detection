@@ -39,7 +39,7 @@ Device.getAll = (result) => {
         }
 
         if(res.length == 0){
-            result({code: 404, type: "DEVICE_GET_0_ROW", error: "No Devices found", query: get_all_devices_query}, null);
+            result({code: 404, type: "DEVICE_GET_0_ROW", error: "Devices not found", query: get_all_devices_query}, null);
             return;
         }
 
@@ -66,7 +66,7 @@ Device.findByOwnerId = (ownerId, result) => {
         }
 
         if(res.length == 0){
-            result({code: 404, type: "DEVICE_GET_BY_OWNER_ID_0_ROW", error: "No Devices found", query: get_devices_by_owner_id_query}, null);
+            result({code: 404, type: "DEVICE_GET_BY_OWNER_ID_0_ROW", error: "Devices not found", query: get_devices_by_owner_id_query}, null);
             return;
         }
 
@@ -102,7 +102,7 @@ Device.updateById = (id, ownerId, newValue, result) => {
         }
 
         if(res.affectedRows == 0){
-            result({code: 404, type: "DEVICE_UPDATE_BY_ID_0_ROW", error: "No Devices found", query: update_device_query}, null);
+            result({code: 404, type: "DEVICE_UPDATE_BY_ID_0_ROW", error: "Devices not found", query: update_device_query}, null);
             return;
         }
 
@@ -119,7 +119,7 @@ Device.removeById = (id, ownerId, result) => {
         }
 
         if(res.affectedRows == 0){
-            result({code: 404, type: "DEVICE_DELETE_BY_ID_0_ROW", error: "No Devices found", query: delete_device_query}, null);
+            result({code: 404, type: "DEVICE_DELETE_BY_ID_0_ROW", error: "Devices not found", query: delete_device_query}, null);
             return;
         }
 

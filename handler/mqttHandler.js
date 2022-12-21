@@ -1,3 +1,5 @@
+let debug = require('debug')('app:mqtt');
+
 let mqtt = require('../models/mqtt');
 let Node = require('./nodeHandler')
 
@@ -16,6 +18,7 @@ mqtt.on('message', (topic, message) => {
         let node_topic = topic.split(`${topics['node']}/`)[1];
         let topic_params = node_topic.split('/');
         let deviceId = topic_params[0];
+        debug("topic: %s | deviceId:%s | message: %s", topic, deviceId, message);
         Node.store(topic, deviceId, message);
     }
 })

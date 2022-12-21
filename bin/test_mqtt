@@ -1,0 +1,30 @@
+var env = require('dotenv').config();
+global.env = env.parsed;
+
+let debug = require('debug')('test:mqtt');
+let moment = require('moment');
+
+let node = require('../models/nodeModel');
+
+function publishNodeData(topic){
+    device_id = "gps-01"
+    topic = `${topic}/node/${device_id}`;
+    timestamp = moment().format("YYYY-MM-DD HH:mm:ss");
+    data = {lat:1.32131331, lng:0.32131312, status:"normal", timestamp: timestamp};
+    console.log("Publishing data:", data, " with topic: ", topic);
+
+    node.publishData(topic, data, (err, res) => {
+        if (err){
+            console.error("Publish node data topic %s | %s error: %s\nmessage:\n%s", topic, err.type, err.error, err.message);
+        }
+
+        debug("Publish node data succeed topic %s data: %s", topic, res);
+    })
+}
+
+function main(){
+    topic = 'acd'
+    publishNodeData(topic);
+}
+
+main();

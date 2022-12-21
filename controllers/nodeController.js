@@ -10,6 +10,15 @@ exports.findByDeviceId = (req, res) => {
     if (!req.params.deviceId) {
         input_errors.push("missing parameter device id");
     }
+    var limit = 7;
+    if (req.body.limit){
+        try{
+            limit = parseInt(req.body.limit);
+        }
+        catch(err){
+            input_errors.push("invalid limit parameter, expecting an int");
+        }
+    }
     
     if (input_errors.length > 0){
         var code = 400;
@@ -19,7 +28,7 @@ exports.findByDeviceId = (req, res) => {
         return;
     }
 
-    Node.findByDeviceId(req.params.deviceId, (err, data) => {
+    Node.findByDeviceId(req.params.deviceId, limit, (err, data) => {
         if (err) {
             message = null;
             if (err.code == 500){

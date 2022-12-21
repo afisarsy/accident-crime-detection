@@ -5,6 +5,8 @@ let path = require('path');
 let cookieParser = require('cookie-parser');
 let logger = require('morgan');
 
+let mqtt = require('./mqttHandler');
+
 let usersRouter = require('../api/userApi');
 let devicesRouter = require('../api/deviceApi');
 let nodeRouter = require('../api/nodeApi');
