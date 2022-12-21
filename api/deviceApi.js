@@ -3,18 +3,18 @@ var router = express.Router();
 let deviceController = require('../controllers/deviceController');
 
 /* Get all devices */
-router.get('/', deviceController.findAll);
+router.get('/devices', deviceController.findAll);
 
 /* Get devices by owner id */
-router.get('/:ownerId', deviceController.findUserDevices);
+router.get('/devices/:ownerId?', deviceController.findUserDevices);
 
 /* Create a new device */
-router.post('/', deviceController.create);
+router.post('/device', deviceController.create);
 
 /* Update device by id */
-router.put('/:id?', deviceController.update);
+router.put('/device/:id?', deviceController.update);
 
 /* Delete device by id */
-router.delete('/:id?', deviceController.delete);
+router.delete('/device/:id?', deviceController.delete);
 
 module.exports = router;

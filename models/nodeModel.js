@@ -1,15 +1,14 @@
 let mysqlx = require('./mysqlx');
 let mysqlFunction = require('../functions/mysqlFunction');
-let mqtt = require('./mqtt');
 
 module.exports.findByDeviceId = (deviceId, result, limit = 7) => {
     mysqlx.getSession()
 	.then((session) => {
-        let collection = session.getDefaultSchema().getCollection("locations");
+        let collection = session.getDefaultSchema().getCollection("node_data");
 		let docs = [];
 
-        var query = collection.find("deviceId = :devId").bind("devId", deviceId).sort('_id desc').limit(limit);
-		var find_location_query = {
+        var query = collection.find("device_id = :devId").bind("devId", deviceId).sort('timestamp desc').limit(limit);
+		var find_node_data_query = {
 			schema: query.getSchema().getName(),
 			collection: query.getTableName(),
 			criteria: query.getCriteria(),
@@ -20,14 +19,14 @@ module.exports.findByDeviceId = (deviceId, result, limit = 7) => {
 		query.execute(doc => docs.push(doc))
 		.then(() => {
 			if(docs.length == 0) {
-				result({code: 404, type: "LOCATION_FIND_BY_DEVICE_ID_0_ROW", error: "No locations found", query: find_location_query}, null);
+				result({code: 404, type: "NODE_DATA_FIND_BY_DEVICE_ID_0_ROW", error: "No data found", query: find_node_data_query}, null);
             	return;
 			}
 			
 			result(null, docs);
 		})
 		.catch(err => {
-			result({code: 500, type: "LOCATION_FIND_BY_DEVICE_ID", error: err, query: find_location_query}, null);
+			result({code: 500, type: "NODE_DATA_FIND_BY_DEVICE_ID", error: err, query: find_node_data_query}, null);
 		})
     })
 }
@@ -35,22 +34,29 @@ module.exports.findByDeviceId = (deviceId, result, limit = 7) => {
 module.exports.store = (doc, result) => {
 	mysqlx.getSession()
 	.then((session) => {
-		let locationId;
+		let dataId;
 		session.startTransaction()
 		try{
-			let collection = session.getDefaultSchema().getCollection("locations");
-			collection.add(doc).execute()
+			let collection = session.getDefaultSchema().getCollection("node_data");
+			var query = collection.add(doc);
+			var store_node_data_query = {
+				schema: query.getSchema().getName(),
+				collection: query.getTableName(),
+				type: "STORE",
+				doc: doc
+			}
+			query.execute()
 			.then((storeQuery) => {
-				locationId = storeQuery.getGeneratedIds()[0];
-				session.sql('UPDATE devices SET ' +  mysqlFunction.dict2Query({ last_loc_id: locationId }) + ' WHERE id = \'' + doc.deviceId + '\'').execute()
+				dataId = storeQuery.getGeneratedIds()[0];
+				session.sql('UPDATE devices SET ' +  mysqlFunction.dict2Query({ last_loc_id: dataId }) + ' WHERE id = \'' + doc.deviceId + '\'').execute()
 				.then((updateQuery) => {
-					if(updateQuery.getAffectedItemsCount() < 1)	throw {message: 'Failed to update device location'};
+					if(updateQuery.getAffectedItemsCount() < 1)	throw {message: 'Failed to store device data'};
 				})
 				.then(() => {
 					session.commit();
-					console.log('location stored with id', locationId);
+					console.log('data stored with id', dataId);
 					session.close();
-					result(null, {id: locationId});
+					result(null, {id: dataId});
 					return;
 				})
 				.catch((err) => {
@@ -81,10 +87,4 @@ module.exports.store = (doc, result) => {
 		console.error("error: ", err);
 		result(err, null);
 	})
-}
-
-module.exports.publishLocation = (deviceId, ownerId, data) => {
-	let topic = 'amw/location/' + deviceId + '/' + ownerId;
-	console.log('Publishing to', topic)
-	mqtt.publish(topic, JSON.stringify(data));
 }

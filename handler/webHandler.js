@@ -7,7 +7,7 @@ let logger = require('morgan');
 
 let usersRouter = require('../api/userApi');
 let devicesRouter = require('../api/deviceApi');
-let locationRouter = require('../api/locationApi');
+let nodeRouter = require('../api/nodeApi');
 
 let Response = require('../models/responseModel');
 
@@ -23,9 +23,9 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, '../public')));
 
-app.use('/users', cors(), usersRouter);
-app.use('/devices', cors(), devicesRouter);
-app.use('/location', cors(), locationRouter);
+app.use('', cors(), usersRouter);
+app.use('', cors(), devicesRouter);
+app.use('', cors(), nodeRouter);
 
 app.get('*', function (req, res) {
   var code = 404;

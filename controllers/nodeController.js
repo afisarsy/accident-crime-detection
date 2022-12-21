@@ -1,6 +1,6 @@
 let Response = require('../models/responseModel');
-let Location = require('../models/locationModel');
-let debug = require('debug')('app:server:controller:location');
+let Node = require('../models/nodeModel');
+let debug = require('debug')('app:server:controller:node');
 
 exports.findByDeviceId = (req, res) => {
     var ip = (req.headers['x-forwarded-for'] || req.connection.remoteAddress || '').split(',')[0].trim();
@@ -19,7 +19,7 @@ exports.findByDeviceId = (req, res) => {
         return;
     }
 
-    Location.findByDeviceId(req.params.deviceId, (err, data) => {
+    Node.findByDeviceId(req.params.deviceId, (err, data) => {
         if (err) {
             message = null;
             if (err.code == 500){
@@ -35,7 +35,7 @@ exports.findByDeviceId = (req, res) => {
         } else {
             var code = 200;
             let response = new Response(code, null, data);
-            debug("%d - %s from %s | Device %s Locations: %s", code, route, ip, req.params.deviceId, JSON.stringify(data));
+            debug("%d - %s from %s | Device %s Data: %s", code, route, ip, req.params.deviceId, JSON.stringify(data));
             res.send(response);
         }
     })
