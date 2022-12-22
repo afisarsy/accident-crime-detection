@@ -46,13 +46,15 @@ const HTTP_STATUS = {
     511: "NETWORK_AUTHENTICATION_REQUIRED",         //Indicates that the client needs to authenticate to gain network access.
 }
 
-let Response = function(code, error, data) {
+let Response = function(code, error, data, others=null) {
     this.code = code;
     this.status = HTTP_STATUS[code];
-    if (data != null)
+    if (data)
         this.data = data;
-    if (error != null)
+    if (error)
         this.error = error;
+    for (key in others)
+        this[key] = others[key];
 }
 
 module.exports = Response;

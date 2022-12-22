@@ -1,23 +1,24 @@
 let express = require('express');
 let router = express.Router();
-let userController = require('../controllers/userController');
+let user = require('../controllers/userController');
+let JWT = require('../middleware/jwtAuth');
 
 /* Get all users */
-router.get('/users', userController.findAll);
+router.get('/users/', JWT.verifyToken, user.getAll);
 
-/* Get user by id */
-router.get('/user/:id?', userController.findOne);
+/* Get user data */
+router.get('/user/', JWT.verifyToken, user.getMine);
 
-/* Post user by auth */
-router.post('/login', userController.findByAuth);
+/* Login */
+router.post('/login/', user.login);
 
-/* Create a new user */
-router.post('/user/create', userController.create);
+/* Register a new user */
+router.post('/user/register/', user.register);
 
-/* Update user by id */
-router.put('/user/:id?', userController.update);
+/* Update user data */
+router.put('/user/', JWT.verifyToken, user.update);
 
-/* Delete user by id */
-router.delete('/user/:id?', userController.delete);
+/* Delete user */
+router.delete('/user/', JWT.verifyToken, user.delete);
 
 module.exports = router;

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 let env = require('dotenv').config();
-let dataFunction = require('../functions/dataFunction');
+let DataFunction = require('../functions/dataFunction');
 
 /**
  * Override if not specified
@@ -25,7 +25,7 @@ let http = require('http');
  * Get port from environment and store in Express.
  */
 
-let port = dataFunction.normalizePort(process.env.PORT || '3000');
+let port = DataFunction.normalizePort(process.env.PORT || '3000');
 app.set('port', port);
 
 /**

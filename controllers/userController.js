@@ -1,8 +1,12 @@
+var jwt = require("jsonwebtoken");
+
+let DataFunction = require('../functions/dataFunction');
 let Response = require('../models/responseModel');
 let User = require('../models/userModel');
+
 let debug = require('debug')('app:server:controller:user');
 
-exports.create = (req, res) => {
+exports.register = (req, res) => {
     var ip = (req.headers['x-forwarded-for'] || req.connection.remoteAddress || '').split(',')[0].trim();
     var route = req.baseUrl + req.path;
     
@@ -20,7 +24,7 @@ exports.create = (req, res) => {
     if (input_errors.length > 0){
         var code = 400;
         let response = new Response(code, {input: input_errors}, null);
-        console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(input_errors), req);
+        console.warn("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(input_errors), req);
         res.status(code).send(response);
         return;
     }
@@ -28,17 +32,18 @@ exports.create = (req, res) => {
     let user = new User({
         name: req.body.name,
         username: req.body.username,
-        password: req.body.password
+        password: DataFunction.hashPassword(req.body.password),
+        role: req.body.role || "user"
     });
 
     User.create(user, (err, data) => {
         if (err) {
             message = null;
             if (err.code == 500){
-                console.error("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
+                console.error("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
             }
             else if (err.code == 400){
-                console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
+                console.warn("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
                 message = {input: [err.error]};
             }
 
@@ -53,18 +58,35 @@ exports.create = (req, res) => {
     })
 }
 
-exports.findAll = (req, res) => {
+exports.getAll = (req, res) => {
     var ip = (req.headers['x-forwarded-for'] || req.connection.remoteAddress || '').split(',')[0].trim();
     var route = req.baseUrl + req.path;
+
+    try{
+        if (!req.user) {
+            throw "Invalid JWT token";
+        }
+        
+        if (["dev", "admin"].indexOf(req.user.role) == -1){
+            throw "Unauthorized access";
+        }
+    }
+    catch(auth_error){
+        var code = 403;
+        let response = new Response(code, {auth: auth_error}, null);
+        console.warn("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(auth_error), req);
+        res.status(code).send(response);
+        return;
+    }
 
     User.getAll((err, data) => {
         if (err) {
             message = null;
             if (err.code == 500){
-                console.error("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
+                console.error("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
             }
             else if (err.code == 404){
-                console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
+                console.warn("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
                 message = {msg: ["No user found"]};
             }
 
@@ -79,32 +101,32 @@ exports.findAll = (req, res) => {
     })
 }
 
-exports.findOne = (req, res) => {
+exports.getMine = (req, res) => {
     var ip = (req.headers['x-forwarded-for'] || req.connection.remoteAddress || '').split(',')[0].trim();
     var route = req.baseUrl + req.path;
 
-    let input_errors = [];
-    if (!req.params.id) {
-        input_errors.push("missing parameter id");
+    try{
+        if (!req.user) {
+            throw "Invalid JWT token";
+        }
     }
-
-    if (input_errors.length > 0){
-        var code = 400;
-        let response = new Response(code, {input: input_errors}, null);
-        console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(input_errors), req);
+    catch(auth_error){
+        var code = 403;
+        let response = new Response(code, {auth: auth_error}, null);
+        console.warn("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(auth_error), req);
         res.status(code).send(response);
         return;
     }
 
-    User.findById(req.params.id, (err, data) => {
+    User.findById(req.user.id, (err, data) => {
         if (err){
             message = null;
             if (err.code == 500){
-                console.error("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
+                console.error("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
             }
             else if (err.code == 404){
-                console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
-                message = {msg: [`No user with id ${req.params.id} found`]};
+                console.warn("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
+                message = {msg: [`No user with id ${req.user.id} found`]};
             }
             
             var response = new Response(err.code, message, null);
@@ -112,13 +134,13 @@ exports.findOne = (req, res) => {
         } else {
             var code = 200;
             let response = new Response(code, null, data);
-            debug("%d - %s from %s | User %s Data: %s", code, route, ip, req.params.id, JSON.stringify(data));
+            debug("%d - %s from %s | User %s Data: %s", code, route, ip, req.user.id, JSON.stringify(data));
             res.send(response);
         }
     });
 }
 
-exports.findByAuth = (req, res) => {
+exports.login = (req, res) => {
     var ip = (req.headers['x-forwarded-for'] || req.connection.remoteAddress || '').split(',')[0].trim();
     var route = req.baseUrl + req.path;
 
@@ -133,30 +155,52 @@ exports.findByAuth = (req, res) => {
     if (input_errors.length > 0){
         var code = 400;
         let response = new Response(code, {input: input_errors}, null);
-        console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(input_errors), req);
+        console.warn("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(input_errors), req);
         res.status(code).send(response);
         return;
     }
 
-    User.findByUserPass(req.body.username, req.body.password, (err, data) => {
+    User.findByUsername(req.body.username, (err, data) => {
         if (err){
             message = null;
             if (err.code == 500){
-                console.error("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
+                console.error("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
             }
-            else if (err.code == 404){
-                console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
-                message = {msg: ["Incorrect username or password"]};
+            else if (err.code == 404){  //not found in database
+                code = 401;             //unauthorized
+                console.warn("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s\nError Query\n%s", code, route, ip, err.type, err.error, req, err.query);
+                message = {input: ["Invalid username"]};
             }
             
             var response = new Response(err.code, message, null);
             res.status(err.code).send(response);
         }
         else {
-            var code = 200;
-            let response = new Response(code, null, data);
-            debug("%d - %s from %s | User %s logged in | Data: %s", code, route, ip, req.params.id, JSON.stringify(data));
-            res.send(response);
+            if (DataFunction.checkPassword(req.body.password, data.password)){
+
+                var token = jwt.sign({id: data.id}, process.env.SECRET, {expiresIn: 86400});
+                var userData = {
+                    user: {
+                        id: data.id,
+                        name: data.name,
+                        username: data.username,
+                    }
+                };
+                var additionalData = {
+                    accessToken: token
+                };
+
+                var code = 200;
+                let response = new Response(code, null, userData, additionalData);
+                debug("%d - %s from %s | User %s logged in | Data: %s\nAdditional Data:\n%s", code, route, ip, data.username, JSON.stringify(userData), JSON.stringify(additionalData));
+                res.send(response);
+            }
+            else{
+                var code = 401;
+                let response = new Response(code, {input: ["Invalid password"]}, null);
+                debug("%d - %s from %s | Password %s is wrong | Data: %s", code, route, ip, req.body.password, JSON.stringify(data));
+                res.send(response);
+            }
         }
     });
 }
@@ -165,19 +209,20 @@ exports.update = (req, res) => {
     var ip = (req.headers['x-forwarded-for'] || req.connection.remoteAddress || '').split(',')[0].trim();
     var route = req.baseUrl + req.path;
 
-    let input_errors = [];
-    if (!req.params.id){
-        input_errors.push("missing parameter id");
+    try{
+        if (!req.user) {
+            throw "Invalid JWT token";
+        }
     }
-
-    if (input_errors.length > 0){
-        var code = 400;
-        let response = new Response(code, {input: input_errors}, null);
-        console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(input_errors), req);
+    catch(auth_error){
+        var code = 403;
+        let response = new Response(code, {auth: auth_error}, null);
+        console.warn("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(auth_error), req);
         res.status(code).send(response);
         return;
     }
 
+    let input_errors = [];
     var update_data = {};
     if (req.body.name){
         update_data.name = req.body.name;
@@ -188,30 +233,33 @@ exports.update = (req, res) => {
     if (req.body.password){
         update_data.password = req.body.password;
     }
+    if (req.body.role){
+        update_data.role = req.body.role;
+    }
     
     if (Object.keys(update_data).length === 0){
         input_errors.push("No valid data found");
-        input_errors.push("Acceptable data: name, username, password");
+        input_errors.push("Acceptable data: name, username, password, role");
         var code = 400;
         let response = new Response(code, {input: input_errors}, null);
-        console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(input_errors));
+        console.warn("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(input_errors));
         res.status(code).send(response);
         return;
     }
 
-    User.updateById(req.params.id, update_data, (err, data) => {
+    User.updateById(req.user.id, update_data, (err, data) => {
         if (err){
             message = null;
             if (err.code == 500){
-                console.error("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
+                console.error("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
             }
             else if (err.code == 400){
-                console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
+                console.warn("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
                 message = {input: [err.error]};
             }
             else if (err.code == 404){
-                console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
-                message = {msg: [`No user with id ${req.params.id} found, failed to update user data`]};
+                console.warn("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
+                message = {msg: [`No user with id ${req.user.id} found, failed to update user data`]};
             }
             
             var response = new Response(err.code, message, null);
@@ -219,7 +267,7 @@ exports.update = (req, res) => {
         } else {
             var code = 200;
             let response = new Response(code, null, data);
-            debug("%d - %s from %s | User %s Updated to: %s", code, route, ip, req.params.id, data);
+            debug("%d - %s from %s | User %s Updated to: %s", code, route, ip, req.user.id, data);
             res.send(response);
         }
     });
@@ -229,28 +277,28 @@ exports.delete = (req, res) => {
     var ip = (req.headers['x-forwarded-for'] || req.connection.remoteAddress || '').split(',')[0].trim();
     var route = req.baseUrl + req.path;
 
-    let input_errors = [];
-    if (!req.params.id) {
-        input_errors.push("missing parameter id");
+    try{
+        if (!req.user) {
+            throw "Invalid JWT token";
+        }
     }
-
-    if (input_errors.length > 0){
-        var code = 400;
-        let response = new Response(code, {input: input_errors}, null);
-        console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(input_errors), req);
+    catch(auth_error){
+        var code = 403;
+        let response = new Response(code, {auth: auth_error}, null);
+        console.warn("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(auth_error), req);
         res.status(code).send(response);
         return;
     }
 
-    User.removeById(req.params.id, (err, data) => {
+    User.removeById(req.user.id, (err, data) => {
         if (err){
             message = null;
             if (err.code == 500){
-                console.error("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
+                console.error("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
             }
             else if (err.code == 404){
-                console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
-                message = {msg: [`No user with id ${req.params.id} found, failed to delete user`]};
+                console.warn("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
+                message = {msg: [`No user with id ${req.user.id} found, failed to delete user`]};
             }
 
             var response = new Response(err.code, message, null);
@@ -258,7 +306,7 @@ exports.delete = (req, res) => {
         } else {
             var code = 200;
             let response = new Response(code, null, null);
-            debug("%d - %s from %s | User deleted: %s", code, route, ip, req.params.id);
+            debug("%d - %s from %s | User deleted: %s", code, route, ip, req.user.id);
             res.send(response);
         }
     });

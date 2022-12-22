@@ -4,7 +4,8 @@ let mysqlFunction = require('../functions/mysqlFunction');
 let User = function(user) {
     this.name = user.name,
     this.username = user.username,
-    this.password = user.password
+    this.password = user.password,
+    this.role = user.role
 }
 
 User.create = (newUser, result) => {
@@ -48,7 +49,7 @@ User.getAll = (result) => {
 };
 
 User.findById = (id, result) => {
-    var get_user_by_user_id_query = `SELECT id, name, username FROM users WHERE id = '${id}'`;
+    var get_user_by_user_id_query = `SELECT id, name, username, role FROM users WHERE id = '${id}'`;
     mysql.query(get_user_by_user_id_query, (err, res) => {
         if(err){
             result({code: 500, type: "USER_GET_BY_USER_ID", error: err, query: get_user_by_user_id_query}, null);
@@ -64,16 +65,16 @@ User.findById = (id, result) => {
     });
 };
 
-User.findByUserPass = (user, pass, result) => {
-    var get_user_by_username_password_query = `SELECT id, name, username FROM users WHERE ${mysqlFunction.dict2Condition({'username':user, 'password':pass})}`;
+User.findByUsername = (username, result) => {
+    var get_user_by_username_password_query = `SELECT id, name, username, password FROM users WHERE ${mysqlFunction.dict2Condition({'username':username})}`;
     mysql.query(get_user_by_username_password_query, (err, res) => {
         if(err){
-            result({code: 500, type: "USER_GET_BY_USERNAME_PASSWORD", error: err, query: get_user_by_username_password_query}, null);
+            result({code: 500, type: "USER_GET_BY_USERNAME", error: err, query: get_user_by_username_password_query}, null);
             return;
         }
 
         if(res.length == 0){
-            result({code: 404, type: "USER_GET_BY_USERNAME_PASSWORD_0_ROW", error: "Username-Password not found", query: get_user_by_username_password_query}, null);
+            result({code: 404, type: "USER_GET_BY_USERNAME_0_ROW", error: "Invalid Username", query: get_user_by_username_password_query}, null);
             return;
         }
 

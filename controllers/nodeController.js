@@ -2,9 +2,22 @@ let Response = require('../models/responseModel');
 let Node = require('../models/nodeModel');
 let debug = require('debug')('app:server:controller:node');
 
-exports.findByDeviceId = (req, res) => {
+exports.getData = (req, res) => {
     var ip = (req.headers['x-forwarded-for'] || req.connection.remoteAddress || '').split(',')[0].trim();
     var route = req.baseUrl + req.path;
+
+    try{
+        if (!req.user) {
+            throw "Invalid JWT token";
+        }
+    }
+    catch(auth_error){
+        var code = 403;
+        let response = new Response(code, {auth: auth_error}, null);
+        console.warn("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(auth_error), req);
+        res.status(code).send(response);
+        return;
+    }
 
     let input_errors = [];
     if (!req.params.deviceId) {
@@ -23,7 +36,7 @@ exports.findByDeviceId = (req, res) => {
     if (input_errors.length > 0){
         var code = 400;
         let response = new Response(code, {input: input_errors}, null);
-        console.warn("%d - %s from %s | %s errors: %s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(input_errors), req);
+        console.warn("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(input_errors), req);
         res.status(code).send(response);
         return;
     }
@@ -32,10 +45,10 @@ exports.findByDeviceId = (req, res) => {
         if (err) {
             message = null;
             if (err.code == 500){
-                console.error("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
+                console.error("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
             }
             else if (err.code == 404){
-                debug("%d - %s from %s | %s errors: %s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
+                debug("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s\nError Query\n%s", err.code, route, ip, err.type, err.error, req, err.query);
                 message = {msg: ["No Data"]};
             }
 
