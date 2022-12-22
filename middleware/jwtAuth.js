@@ -10,7 +10,11 @@ module.exports.verifyToken = (req, res, next) => {
     if (req.headers && req.headers.authorization && req.headers.authorization.split(' ')[0] === 'Bearer') {
         jwt.verify(req.headers.authorization.split(' ')[1], process.env.SECRET, (err, decode) => {
             if (err) {
-                req.user = undefined;
+                var code = 403;
+                let response = new Response(code, {auth: "Invalid JWT token"}, null);
+                console.warn("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(auth_error), req);
+                res.status(code).send(response);
+                return;
             }
 
             User.findById(decode.id, (err, data) => {
