@@ -154,6 +154,7 @@ CREATE TABLE `users` (
   `name` tinytext NOT NULL,
   `username` varchar(60) NOT NULL,
   `password` varchar(128) DEFAULT NULL,
+  `role` tinytext NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id` (`id`),
   UNIQUE KEY `username` (`username`)
@@ -169,4 +170,4 @@ CREATE TABLE `users` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2022-12-22  7:45:52
+-- Dump completed on 2022-12-22 12:38:36
