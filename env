@@ -1,0 +1,22 @@
+#Environment
+NODE_ENV=development
+
+#Server config
+PORT=3000
+HOST=localhost
+SECRET=a_secret_words
+
+#DB config
+MYSQL_HOST=localhost
+MYSQL_PORT=3306
+MYSQLX_PORT=33060
+#MYSQL_SCHEMA=database_schema
+#MYSQL_USER=database_user
+#MYSQL_PASS=database_password
+
+#MQTT config
+MQTT_HOST=localhost
+MQTT_PORT=1887
+MQTT_BASE_TOPIC=topic
+#MQTT_USER=mqtt_user
+#MQTT_PASS=mqtt-password
