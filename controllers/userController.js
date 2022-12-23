@@ -184,6 +184,7 @@ exports.login = (req, res) => {
                         id: data.id,
                         name: data.name,
                         username: data.username,
+                        role: data.role
                     }
                 };
                 var additionalData = {
