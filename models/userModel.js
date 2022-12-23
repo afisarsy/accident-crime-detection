@@ -66,7 +66,7 @@ User.findById = (id, result) => {
 };
 
 User.findByUsername = (username, result) => {
-    var get_user_by_username_password_query = `SELECT id, name, username, password FROM users WHERE ${mysqlFunction.dict2Condition({'username':username})}`;
+    var get_user_by_username_password_query = `SELECT id, name, username, password, role FROM users WHERE ${mysqlFunction.dict2Condition({'username':username})}`;
     mysql.query(get_user_by_username_password_query, (err, res) => {
         if(err){
             result({code: 500, type: "USER_GET_BY_USERNAME", error: err, query: get_user_by_username_password_query}, null);
