@@ -63,7 +63,7 @@ exports.register = (req, res) => {
             var code = 200;
             let response = new Response(code, null, data);
             debug("%d - %s from %s | Device created: %s", code, route, ip, data);
-            res.send(response);
+            res.status(code).send(response);
         }
     })
 }
@@ -106,7 +106,7 @@ exports.getAll = (req, res) => {
             var code = 200;
             let response = new Response(code, null, data);
             debug("%d - %s from %s | Devices: %s", code, route, ip, JSON.stringify(data));
-            res.send(response);
+            res.status(code).send(response);
         }
     })
 }
@@ -145,7 +145,7 @@ exports.getMine = (req, res) => {
             var code = 200;
             let response = new Response(code, null, data);
             debug("%d - %s from %s | User %s Devices: %s", code, route, ip, req.user.id, JSON.stringify(data));
-            res.send(response);
+            res.status(code).send(response);
         }
     });
 }
@@ -222,7 +222,7 @@ exports.update = (req, res) => {
             var code = 200;
             let response = new Response(code, null, data);
             debug("%d - %s from %s | Device %s Updated to: %s", code, route, ip, req.params.id, data);
-            res.send(response);
+            res.status(code).send(response);
         }
     });
 }
@@ -274,7 +274,7 @@ exports.delete = (req, res) => {
             var code = 200;
             let response = new Response(code, null, null);
             debug("%d - %s from %s | Device deleted: %s", code, route, ip, req.params.id);
-            res.send(response);
+            res.status(code).send(response);
         }
     });
 }

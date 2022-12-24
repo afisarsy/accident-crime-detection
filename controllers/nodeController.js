@@ -58,7 +58,7 @@ exports.getData = (req, res) => {
             var code = 200;
             let response = new Response(code, null, data);
             debug("%d - %s from %s | Device %s Data: %s", code, route, ip, req.params.deviceId, JSON.stringify(data));
-            res.send(response);
+            res.status(code).send(response);
         }
     })
 }

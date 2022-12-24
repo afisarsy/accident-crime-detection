@@ -23,7 +23,7 @@ exports.register = (req, res) => {
 
     if (input_errors.length > 0){
         var code = 400;
-        let response = new Response(code, {input: input_errors}, null);
+        var response = new Response(code, {input: input_errors}, null);
         console.warn("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(input_errors), req);
         res.status(code).send(response);
         return;
@@ -51,9 +51,9 @@ exports.register = (req, res) => {
             res.status(err.code).send(response);
         } else {
             var code = 200;
-            let response = new Response(code, null, data);
+            var response = new Response(code, null, data);
             debug("%d - %s from %s | User created: %s", code, route, ip, data);
-            res.send(response);
+            res.status(code).send(response);
         }
     })
 }
@@ -73,7 +73,7 @@ exports.getAll = (req, res) => {
     }
     catch(auth_error){
         var code = 403;
-        let response = new Response(code, {auth: auth_error}, null);
+        var response = new Response(code, {auth: auth_error}, null);
         console.warn("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(auth_error), req);
         res.status(code).send(response);
         return;
@@ -94,9 +94,9 @@ exports.getAll = (req, res) => {
             res.status(err.code).send(response);
         } else {
             var code = 200;
-            let response = new Response(code, null, data);
+            var response = new Response(code, null, data);
             debug("%d - %s from %s | Users: %s", code, route, ip, JSON.stringify(data));
-            res.send(response);
+            res.status(code).send(response);
         }
     })
 }
@@ -112,7 +112,7 @@ exports.getMine = (req, res) => {
     }
     catch(auth_error){
         var code = 403;
-        let response = new Response(code, {auth: auth_error}, null);
+        var response = new Response(code, {auth: auth_error}, null);
         console.warn("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(auth_error), req);
         res.status(code).send(response);
         return;
@@ -133,9 +133,9 @@ exports.getMine = (req, res) => {
             res.status(err.code).send(response);
         } else {
             var code = 200;
-            let response = new Response(code, null, data);
+            var response = new Response(code, null, data);
             debug("%d - %s from %s | User %s Data: %s", code, route, ip, req.user.id, JSON.stringify(data));
-            res.send(response);
+            res.status(code).send(response);
         }
     });
 }
@@ -154,7 +154,7 @@ exports.login = (req, res) => {
 
     if (input_errors.length > 0){
         var code = 400;
-        let response = new Response(code, {input: input_errors}, null);
+        var response = new Response(code, {input: input_errors}, null);
         console.warn("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(input_errors), req);
         res.status(code).send(response);
         return;
@@ -174,6 +174,7 @@ exports.login = (req, res) => {
             
             var response = new Response(err.code, message, null);
             res.status(err.code).send(response);
+            return;
         }
         else {
             if (DataFunction.checkPassword(req.body.password, data.password)){
@@ -192,15 +193,15 @@ exports.login = (req, res) => {
                 };
 
                 var code = 200;
-                let response = new Response(code, null, userData, additionalData);
+                var response = new Response(code, null, userData, additionalData);
                 debug("%d - %s from %s | User %s logged in | Data: %s\nAdditional Data:\n%s", code, route, ip, data.username, JSON.stringify(userData), JSON.stringify(additionalData));
-                res.send(response);
+                res.status(code).send(response);
             }
             else{
                 var code = 401;
-                let response = new Response(code, {input: ["Invalid password"]}, null);
+                var response = new Response(code, {input: ["Invalid password"]}, null);
                 debug("%d - %s from %s | Password %s is wrong | Data: %s", code, route, ip, req.body.password, JSON.stringify(data));
-                res.send(response);
+                res.status(code).send(response);
             }
         }
     });
@@ -217,7 +218,7 @@ exports.update = (req, res) => {
     }
     catch(auth_error){
         var code = 403;
-        let response = new Response(code, {auth: auth_error}, null);
+        var response = new Response(code, {auth: auth_error}, null);
         console.warn("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(auth_error), req);
         res.status(code).send(response);
         return;
@@ -242,7 +243,7 @@ exports.update = (req, res) => {
         input_errors.push("No valid data found");
         input_errors.push("Acceptable data: name, username, password, role");
         var code = 400;
-        let response = new Response(code, {input: input_errors}, null);
+        var response = new Response(code, {input: input_errors}, null);
         console.warn("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(input_errors));
         res.status(code).send(response);
         return;
@@ -267,9 +268,9 @@ exports.update = (req, res) => {
             res.status(err.code).send(response);
         } else {
             var code = 200;
-            let response = new Response(code, null, data);
+            var response = new Response(code, null, data);
             debug("%d - %s from %s | User %s Updated to: %s", code, route, ip, req.user.id, data);
-            res.send(response);
+            res.status(code).send(response);
         }
     });
 }
@@ -285,7 +286,7 @@ exports.delete = (req, res) => {
     }
     catch(auth_error){
         var code = 403;
-        let response = new Response(code, {auth: auth_error}, null);
+        var response = new Response(code, {auth: auth_error}, null);
         console.warn("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(auth_error), req);
         res.status(code).send(response);
         return;
@@ -306,9 +307,9 @@ exports.delete = (req, res) => {
             res.status(err.code).send(response);
         } else {
             var code = 200;
-            let response = new Response(code, null, null);
+            var response = new Response(code, null, null);
             debug("%d - %s from %s | User deleted: %s", code, route, ip, req.user.id);
-            res.send(response);
+            res.status(code).send(response);
         }
     });
 }
