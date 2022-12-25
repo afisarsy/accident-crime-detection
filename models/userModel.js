@@ -11,7 +11,7 @@ let User = function(user) {
 User.create = (newUser, result) => {
     var insert_user_query = `INSERT INTO users ${mysqlFunction.dict2InsertQuery(newUser)}`;
     mysql.query(insert_user_query, (err, res) => {
-        var get_inserted_user_id_query = `SELECT id FROM users WHERE ${mysqlFunction.dict2Condition(newUser)}`;
+        var get_inserted_user_id_query = `SELECT id, name, username, password, role FROM users WHERE ${mysqlFunction.dict2Condition(newUser)}`;
         mysql.query(get_inserted_user_id_query, (err2, res2) => {
             if(err){
                 if (err.code == "ER_DUP_ENTRY"){
@@ -26,7 +26,7 @@ User.create = (newUser, result) => {
                 return;
             }
     
-            result(null, {id: res2[0].id, ...newUser});
+            result(null, res2[0]);
         });
     });
 };

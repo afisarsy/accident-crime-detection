@@ -50,8 +50,21 @@ exports.register = (req, res) => {
             var response = new Response(err.code, message, null);
             res.status(err.code).send(response);
         } else {
+            var token = jwt.sign({id: data.id}, process.env.SECRET, {expiresIn: 86400});
+            var userData = {
+                user: {
+                    id: data.id,
+                    name: data.name,
+                    username: data.username,
+                    role: data.role
+                }
+            };
+            var additionalData = {
+                accessToken: token
+            };
+
             var code = 200;
-            var response = new Response(code, null, data);
+            var response = new Response(code, null, userData, additionalData);
             debug("%d - %s from %s | User created: %s", code, route, ip, data);
             res.status(code).send(response);
         }
