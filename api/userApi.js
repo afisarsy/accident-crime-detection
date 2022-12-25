@@ -13,7 +13,7 @@ router.get('/user/', JWT.verifyToken, user.getMine);
 router.post('/login/', user.login);
 
 /* Register a new user */
-router.post('/user/register/', user.register);
+router.post('/register/', user.register);
 
 /* Update user data */
 router.put('/user/', JWT.verifyToken, user.update);
