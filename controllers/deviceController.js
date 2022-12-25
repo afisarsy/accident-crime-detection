@@ -61,7 +61,7 @@ exports.register = (req, res) => {
             res.status(err.code).send(response);
         } else {
             var code = 200;
-            let response = new Response(code, null, data);
+            let response = new Response(code, null, {device: data});
             debug("%d - %s from %s | Device created: %s", code, route, ip, data);
             res.status(code).send(response);
         }
@@ -104,7 +104,7 @@ exports.getAll = (req, res) => {
             res.status(err.code).send(response);
         } else {
             var code = 200;
-            let response = new Response(code, null, data);
+            let response = new Response(code, null, {devices: data});
             debug("%d - %s from %s | Devices: %s", code, route, ip, JSON.stringify(data));
             res.status(code).send(response);
         }
@@ -143,7 +143,7 @@ exports.getMine = (req, res) => {
             res.status(err.code).send(response);
         } else {
             var code = 200;
-            let response = new Response(code, null, data);
+            let response = new Response(code, null, {devices: data});
             debug("%d - %s from %s | User %s Devices: %s", code, route, ip, req.user.id, JSON.stringify(data));
             res.status(code).send(response);
         }
@@ -220,7 +220,7 @@ exports.update = (req, res) => {
             res.status(err.code).send(response);
         } else {
             var code = 200;
-            let response = new Response(code, null, data);
+            let response = new Response(code, null, {device: data});
             debug("%d - %s from %s | Device %s Updated to: %s", code, route, ip, req.params.id, data);
             res.status(code).send(response);
         }

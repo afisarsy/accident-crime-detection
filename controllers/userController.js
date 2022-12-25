@@ -107,7 +107,7 @@ exports.getAll = (req, res) => {
             res.status(err.code).send(response);
         } else {
             var code = 200;
-            var response = new Response(code, null, data);
+            var response = new Response(code, null, {users: data});
             debug("%d - %s from %s | Users: %s", code, route, ip, JSON.stringify(data));
             res.status(code).send(response);
         }
@@ -146,7 +146,7 @@ exports.getMine = (req, res) => {
             res.status(err.code).send(response);
         } else {
             var code = 200;
-            var response = new Response(code, null, data);
+            var response = new Response(code, null, {user: data});
             debug("%d - %s from %s | User %s Data: %s", code, route, ip, req.user.id, JSON.stringify(data));
             res.status(code).send(response);
         }
@@ -281,7 +281,7 @@ exports.update = (req, res) => {
             res.status(err.code).send(response);
         } else {
             var code = 200;
-            var response = new Response(code, null, data);
+            var response = new Response(code, null, {user: data});
             debug("%d - %s from %s | User %s Updated to: %s", code, route, ip, req.user.id, data);
             res.status(code).send(response);
         }
