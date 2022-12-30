@@ -86,7 +86,7 @@ exports.getAll = (req, res) => {
     }
     catch(auth_error){
         var code = 403;
-        var response = new Response(code, {auth: auth_error}, null);
+        var response = new Response(code, {auth: [auth_error]}, null);
         console.warn("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(auth_error), req);
         res.status(code).send(response);
         return;
@@ -125,7 +125,7 @@ exports.getMine = (req, res) => {
     }
     catch(auth_error){
         var code = 403;
-        var response = new Response(code, {auth: auth_error}, null);
+        var response = new Response(code, {auth: [auth_error]}, null);
         console.warn("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(auth_error), req);
         res.status(code).send(response);
         return;
@@ -231,7 +231,7 @@ exports.update = (req, res) => {
     }
     catch(auth_error){
         var code = 403;
-        var response = new Response(code, {auth: auth_error}, null);
+        var response = new Response(code, {auth: [auth_error]}, null);
         console.warn("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(auth_error), req);
         res.status(code).send(response);
         return;
@@ -299,7 +299,7 @@ exports.delete = (req, res) => {
     }
     catch(auth_error){
         var code = 403;
-        var response = new Response(code, {auth: auth_error}, null);
+        var response = new Response(code, {auth: [auth_error]}, null);
         console.warn("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(auth_error), req);
         res.status(code).send(response);
         return;

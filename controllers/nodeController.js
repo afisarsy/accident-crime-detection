@@ -13,7 +13,7 @@ exports.getData = (req, res) => {
     }
     catch(auth_error){
         var code = 403;
-        let response = new Response(code, {auth: auth_error}, null);
+        let response = new Response(code, {auth: [auth_error]}, null);
         console.warn("%d - %s from %s | %s\nerrors\n%s\nRequest data\n%s", code, route, ip, response.status, JSON.stringify(auth_error), req);
         res.status(code).send(response);
         return;
