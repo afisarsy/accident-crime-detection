@@ -29,6 +29,9 @@ module.exports.findByDeviceId = (deviceId, limit, result) => {
 		.catch(err => {
 			result({code: 500, type: "NODE_DATA_FIND_BY_DEVICE_ID", error: err, query: find_node_data_query}, null);
 		})
+		.then(() => {
+			return session.close();
+		});
     })
 }
 
@@ -90,6 +93,9 @@ module.exports.store = (doc, result) => {
 			result({type: "NODE_STORE_DATA", error: err, query: store_node_data_query}, null);
 			return;
 		})
+		.then(() => {
+			return session.close();
+		});
 	})
 	.catch((err) => {
 		result({type: "NODE_STORE_DATA_DB_SESSION", error: err}, null);
