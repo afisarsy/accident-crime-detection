@@ -70,9 +70,9 @@ module.exports.store = (doc, result) => {
 				}
 
 				session.commit();
-				session.close();
 
 				result(null, {id: dataId});
+				return;
 			})
 			.catch((err) => {
 				session.rollback();
@@ -93,9 +93,6 @@ module.exports.store = (doc, result) => {
 			result({type: "NODE_STORE_DATA", error: err, query: store_node_data_query}, null);
 			return;
 		})
-		.then(() => {
-			return session.close();
-		});
 	})
 	.catch((err) => {
 		result({type: "NODE_STORE_DATA_DB_SESSION", error: err}, null);

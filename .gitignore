@@ -4,4 +4,4 @@
 package-lock.json
 *.info
 
-*test*
+bin/*test*
