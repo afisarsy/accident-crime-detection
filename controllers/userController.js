@@ -246,7 +246,7 @@ exports.update = (req, res) => {
         update_data.username = req.body.username;
     }
     if (req.body.password){
-        update_data.password = req.body.password;
+        update_data.password = DataFunction.hashPassword(req.body.password);
     }
     if (req.body.role){
         update_data.role = req.body.role;
