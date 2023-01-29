@@ -7,10 +7,12 @@ module.exports.findAllDeviceData = (ownerId, from, to, result) => {
 	mysqlx.getSession()
 	.then((session) => {
 		//Get user's devices id
-		var get_devices_by_owner_id_query = `SELECT device_id FROM device_ownership WHERE owner_id = '${ownerId}'`;
+		var get_devices_by_owner_id_query = `SELECT device_id, name FROM device_ownership WHERE owner_id = '${ownerId}'`;
 		session.sql(get_devices_by_owner_id_query).execute()
 		.then((res) => {
-			deviceIds = res.fetchAll();
+			let rows = res.fetchAll();
+			let deviceIds = rows.map(data => data[0]);
+			let deviceNames = rows.map(data => data[1]);
 			if(deviceIds.length < 1){
 				result({code: 404, type: "USER_HAS_NO_DEVICE_WITH_ID", error: `User ${ownerId} has 0 registered device`, query: user_has_device_with_id_query}, null);
 				return;
@@ -19,7 +21,7 @@ module.exports.findAllDeviceData = (ownerId, from, to, result) => {
 			//Get user's nodes data
 			let collection = session.getDefaultSchema().getCollection("node_data");
 			let docs = [];
-			var query = collection.find(`( ${mysqlxFunction.array2OrQuery('device_id', [].concat(...deviceIds))} ) AND timestamp BETWEEN :from AND :to`).bind('from', from).bind('to', to).sort('timestamp desc');
+			var query = collection.find(`( ${mysqlxFunction.array2OrQuery('device_id', deviceIds)} ) AND timestamp BETWEEN :from AND :to`).bind('from', from).bind('to', to).sort('timestamp desc');
 			var find_all_node_data_query = {
 				schema: query.getSchema().getName(),
 				collection: query.getTableName(),
@@ -27,7 +29,11 @@ module.exports.findAllDeviceData = (ownerId, from, to, result) => {
 				bindings: query.getBindings(),
 				sort: query.getOrderings()
 			}
-			query.execute(doc => docs.push(doc))
+			query.execute(doc => {
+				doc.name = deviceNames[deviceIds.indexOf(doc.device_id)];
+				console.log(doc);
+				docs.push(doc);
+			})
 			.then(() => {
 				if(docs.length == 0) {
 					result({code: 404, type: "NODE_DATA_FIND_ALL_0_ROW", error: "No data found", query: find_all_node_data_query}, null);
