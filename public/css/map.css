@@ -1,0 +1,20 @@
+#map {
+    height: 100%;
+    width: 100%;
+}
+
+.popupData{
+    margin: 0 !important;
+    text-align: center;
+}
+
+.popupData.name{
+    font-weight: bold;
+}
+
+.popupData.status{
+    color: #009f55;
+}
+.popupData.status.Alert{
+    color: #e02605;
+}

@@ -1,0 +1,25 @@
+body{
+    justify-content: center;
+    align-items: center;
+}
+
+.auth-card{
+    width: 25rem;
+}
+
+.login-subtitle{
+    text-align: center;
+}
+
+.fas{
+    width: 20px;
+}
+
+.validation-text {
+    display: inline-block;
+}
+
+.card-outline{
+    border: 1px solid rgba(0, 0, 0, .3);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, .2);
+}

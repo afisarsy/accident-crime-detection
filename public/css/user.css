@@ -1,0 +1,23 @@
+.username{
+    width: 200px;
+    text-align: right;
+}
+
+.mainWindow{
+    width: 100%;
+    height: calc(100% - 64px);
+    overflow-x: hidden;
+    background-color: rgba(140, 180, 220, .7);
+}
+
+.accountDetails{
+    width: 75%;
+    height: max-content;
+    min-height: 100%;
+    background-color: white;
+    padding: 40px 50px;
+}
+
+#accountDetail input{
+    max-width: calc(100% - 90px);
+}
