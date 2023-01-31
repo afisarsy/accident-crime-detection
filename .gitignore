@@ -54,7 +54,6 @@ writable/cache/*
 writable/logs/*
 !writable/logs/index.html
 
-public/writable/session/*
 writable/session/*
 !writable/session/index.html
 
