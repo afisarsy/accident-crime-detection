@@ -13,7 +13,7 @@ class RESTModel extends Model
     {
         parent::__construct();
 
-        helper(['extendUrl']);
+        helper(['ExtendUrl']);
 
         $this->client = \Config\Services::curlrequest();
     }
