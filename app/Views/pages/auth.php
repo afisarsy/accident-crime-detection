@@ -35,6 +35,7 @@
 								<button id="btnLogin" type="button" class="btn btn-primary">Sign In</button>
 							</div>
 						</div>
+						<input type="submit" hidden />
 					</form>
 					<p class="mb-1">
 						<a href="<?= base_url('/forgot-password') ?>">Forgot password</a>
@@ -80,6 +81,7 @@
 								<button id="btnRegister" type="button" class="btn btn-primary">Register</button>
 							</div>
 						</div>
+						<input type="submit" hidden />
 					</form>
 					<p class="mb-0">
 						<a href="" class="login-form-toggle text-center">Login</a>

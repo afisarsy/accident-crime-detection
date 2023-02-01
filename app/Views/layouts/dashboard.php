@@ -50,6 +50,15 @@
     <?= script_tag('plugins/bootstrap/js/bootstrap.min.js') ?>
     
     <!-- Custom script -->
+    <?= '
+        <script type="text/javascript">
+        var mqttConfig = {};
+        mqttConfig.host = "'. $mqtt['host'] .'";
+        mqttConfig.port = '. $mqtt['port'] .';
+        mqttConfig.user = "'. $mqtt['user'] .'";
+        mqttConfig.pass = "'. $mqtt['pass'] .'";
+        </script>
+    ' ?>
     <?= script_tag('js/base.js') ?>
     <?= script_tag('js/dashboard.js') ?>
     <?= $this->renderSection("scripts"); ?>

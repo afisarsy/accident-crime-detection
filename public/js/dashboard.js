@@ -7,7 +7,6 @@ $(document).ready(() => {
 
     //---------------------------------HTML template----------------------------------
     const generateNotifItemHTML = (data, index) => {
-        console.log((index == null) ? data.name : devices[index].name);
         var notifItemHTML = '<div class="notifItem mb-1 border-top">';
         notifItemHTML += '<p class="name">' + (index == null ? data.name : devices[index].name) + '</p>';
         notifItemHTML += '<div class="data border">';
@@ -144,13 +143,9 @@ $(document).ready(() => {
 //Global variable
 var devices = [];
 var client;
-var mqttConfig = {
-    host: '103.106.72.182',
-    port: 8885,
-    clientId: $.cookie('user_id'),
-    topics: ['acd/node', 'acd/test'],
-    messageListener: []
-};
+mqttConfig.clientId = $.cookie('user_id') + '_' + Math.random().toString(36).substring(2);
+mqttConfig.topics = ['acd/node', 'acd/test'];
+mqttConfig.messageListener = [];
 
 
 //Global Functions
@@ -201,6 +196,8 @@ const connectMQTT = () => {
 
     client.connect({
         onSuccess: onConnect,
+        userName: mqttConfig.user,
+        password: mqttConfig.pass,
         reconnect: true
     });
 }
