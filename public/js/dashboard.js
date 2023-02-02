@@ -116,7 +116,7 @@ $(document).ready(() => {
             from: luxon.DateTime.now().minus({days: retry}).toFormat('yyyy-MM-dd 00:00:00'),
             to: luxon.DateTime.now().minus({days: retry}).toFormat('yyyy-MM-dd 23:59:59')
         };
-        ajaxGet('/notification/', requestData, (response) => {
+        ajaxGet('/notification', requestData, (response) => {
             device_data = response.device_data;
   
                 if (device_data.length == 0){
@@ -151,19 +151,19 @@ mqttConfig.messageListener = [];
 //Global Functions
 //MQTT Functions
 function onConnect(){
-    console.log('MQTT client connected');
+    //console.debug('MQTT client connected');
     mqttConfig.topics.forEach(topic => {
         client.subscribe(topic + '/#', {
             onSuccess: () => {
-                console.log('MQTT client subscribed to ' + topic);
+                //console.debug('MQTT client subscribed to ' + topic);
             }
         });
     });
 }
 function onConnectionLost(responseObject){
-    console.log('MQTT client disconnected');
+    //console.debug('MQTT client disconnected');
     if (responseObject.errorCode !== 0) {
-        console.log("error:"+responseObject.errorMessage);
+        console.error("error:"+responseObject.errorMessage);
     }
 }
 const connectMQTT = () => {
