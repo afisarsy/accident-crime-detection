@@ -19,6 +19,6 @@ def saveconfig(save_path, config):
     try:
         with open(save_path + extension, 'w') as f:
             f.write(json.dumps(config))
-    except e:
+    except Exception as e:
         logger.error(e)
     logger.info("Configuration saved to %s", save_path + extension)

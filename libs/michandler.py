@@ -50,7 +50,7 @@ class Mic:
         #Mic stream initialization
         self.__streambits = int(self.__sampling_rate / self.__CHUNKS_PER_SEGMENT)
         #Add silent segment
-        silent_chunk = (np.zeros(self.__streambits)).astype(np.float32)
+        silent_chunk = (np.zeros(self.__streambits)).astype(np.int16)
         for i in range(0, int(self.__CHUNKS_PER_SEGMENT * (self.__segment_duration / 1000))):
             self.__chunks.append(silent_chunk)
 
@@ -63,8 +63,8 @@ class Mic:
         info = mic.get_host_api_info_by_index(0)
         all_devices = info.get('deviceCount')
         mics = {}
-        for i in range(0, all_devices):
-            if (mic.get_device_info_by_host_api_device_index(0, i).get('maxInputChannels')) > 1:
+        for i in range(0, all_devices): # type: ignore
+            if (mic.get_device_info_by_host_api_device_index(0, i).get('maxInputChannels')) > 1: # type: ignore
                 mics[str(mic.get_device_info_by_host_api_device_index(0, i).get('index'))] = mic.get_device_info_by_host_api_device_index(0, i).get('name')
         return mics
     
@@ -93,10 +93,10 @@ class Mic:
         self.__chunks.append(data)
         self.__chunks.pop(0)
         self.__CHUNK_COUNTER += 1
-        if self.__CHUNK_COUNTER >= int(self.__CHUNKS_PER_SEGMENT * self.__overlap_ratio * (self.__segment_duration / 1000)):
+        if self.__CHUNK_COUNTER >= int(self.__CHUNKS_PER_SEGMENT * self.__overlap_ratio * (self.__segment_duration / 1000)): # type: ignore
             #Save collected chunks with total duration = config["segment duration"]
             segment_data = {
-                "segment" : np.frombuffer(b''.join(self.__chunks), np.float32),
+                "segment" : np.frombuffer(b''.join(self.__chunks), np.int16).astype(np.float32),
                 "time" : datetime.now()
             }
             self.__segment.append(segment_data)
@@ -111,10 +111,10 @@ class Mic:
         Start streaming selected audio input
         """
         logger.info("Initializing streamer")
-        self.stream = self.__mic.open(format = FORMAT,
+        self.stream = self.__mic.open(format = FORMAT, # type: ignore
             channels = CHANNELS,
             rate = self.__sampling_rate,
-            frames_per_buffer = self.__streambits,
+            frames_per_buffer = self.__streambits, # type: ignore
             output = False,
             input = True,
             input_device_index = self.__selected_device_index,
@@ -130,8 +130,8 @@ class Mic:
         """
         #stop audio input stream
         logger.info("Stopping stream")
-        self.stream.stop_stream()
-        self.stream.close()
+        self.stream.stop_stream() # type: ignore
+        self.stream.close() # type: ignore
         logger.info("Stream stopped")
     
     def popallsegments(self):
@@ -142,4 +142,4 @@ class Mic:
         return popped_segments
 
     def destroy(self):
-        self.__mic.terminate()
+        self.__mic.terminate() # type: ignore

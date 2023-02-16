@@ -1,4 +1,5 @@
 import os
+import argparse
 import logging
 import json
 
@@ -7,10 +8,11 @@ from tensorflow.keras.layers import Input, Conv1D, MaxPool1D, Flatten, Dense, LS
 from tensorflow.keras.optimizers import Adam, Adagrad, RMSprop, Nadam, SGD, Adamax, Ftrl, Adadelta
 
 from libs.configmodule import saveconfig
-from libs.argparser import parser, Range
+from libs.argparserbase import Range
 from libs.logger import initlogger
 from libs.nnmodule import NN, Rot90
 
+parser = argparse.ArgumentParser(prog="Training Program for Accident Crime Detection")
 logger = logging.getLogger(__name__)
 
 def main():
@@ -74,7 +76,7 @@ def main():
         model = creatednn(input_shape, len(classes))
     elif config["arch"] == "rnn":
         model = creaternn(input_shape, len(classes))
-    model.summary()
+    model.summary() # type: ignore
     logger.info("Model created")
 
     #Select optimizer
@@ -97,12 +99,12 @@ def main():
 
     #Train
     logger.info("Training started")
-    model.compile(optimizer=used_optimizer(learning_rate=config["learning rate"]), loss='categorical_crossentropy', metrics=['accuracy'])
-    model.fit(x_train, y_train, batch_size=config["batch size"], validation_data=(x_val, y_val), epochs=config["epochs"], verbose=2)
+    model.compile(optimizer=used_optimizer(learning_rate=config["learning rate"]), loss='categorical_crossentropy', metrics=['accuracy']) # type: ignore
+    model.fit(x_train, y_train, batch_size=config["batch size"], validation_data=(x_val, y_val), epochs=config["epochs"], verbose=2) # type: ignore
     logger.info("Training completed")
 
     #Evaluate
-    score = model.evaluate(x=x_test, y=y_test, batch_size=config["batch size"], verbose=0)
+    score = model.evaluate(x=x_test, y=y_test, batch_size=config["batch size"], verbose=0) # type: ignore
     logger.info('Test loss: %r', score[0]) 
     logger.info('Test accuracy: %r', score[1])
 
@@ -114,7 +116,7 @@ def main():
     if config["rbir"] is not None:
         output_path += ("_%g" % config["rbir"])
     output_path += ("_%.1f" % (score[1]*100))
-    model.save(output_path + '.h5')
+    model.save(output_path + '.h5') # type: ignore
     logger.info("Model saved to %s", output_path + ".h5")
 
     #Write config file
@@ -122,7 +124,7 @@ def main():
     
     #Write architecture
     with open(output_path + ".arch", 'w') as f:
-        model.summary(print_fn=lambda x: f.write(x))
+        model.summary(print_fn=lambda x: f.write(x)) # type: ignore
     logger.info("Architecture detail saved to %s", output_path + ".arch")
 
 #CNN model

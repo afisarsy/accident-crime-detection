@@ -25,16 +25,3 @@ def checkloglevel(log_level):
     if level is None:
         raise argparse.ArgumentTypeError("log level must be one of %r" % {' | '.join(levels.keys())})
     return level
-
-#Default
-parser = argparse.ArgumentParser(prog="Accident Crime Detection")
-parser.add_argument(
-    "-log",
-    "--log",
-    type=checkloglevel,
-    default="info",
-    help=(
-        "Provide logging level. "
-        "Example --log debug, default='warning'"
-    )
-)

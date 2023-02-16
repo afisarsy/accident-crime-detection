@@ -3,16 +3,11 @@ from pprint import pformat
 from datetime import datetime
 import asyncio
 import csv
-import sys
 
 import numpy as np
 
-from libs.argparser import parser, Range
+from mainparser import parser
 from libs.logger import initlogger
-from libs.configmodule import loadconfig
-from libs.michandler import Mic
-from libs.audiomodule import Audio
-from libs.nnmodule import NN, Rot90
 
 logger = logging.getLogger(__name__)
 loop = asyncio.get_event_loop()
@@ -22,16 +17,21 @@ def main():
     Audio-based detection and crime detection system
     Realtime runtime system
     """
-    initargs()    
+
     options = parser.parse_known_args()[0]
     initlogger(options.log)
 
     if str.lower(options.mode) == "run":
         running()
     elif str.lower(options.mode) == "get":
-        get()
+        getparam()
 
 def running():
+    #Load required Libraries
+    from libs.configmodule import loadconfig
+    from libs.michandler import Mic
+    from libs.nnmodule import NN, Rot90
+
     options = parser.parse_args()
 
     options.model = options.model.replace("\\","/")
@@ -97,12 +97,17 @@ def running():
         loop.close()
 
         #Close csv file
-        log_process_file.close()
+        if options.log_process:
+            log_process_file.close() # type: ignore
 
 async def featureextreaction(mic, nn, config, path = None, log_process = False):
     """
     Feature extraction task
     """
+    #Load required Libraries
+    if 'Audio' not in dir():
+        from libs.audiomodule import Audio
+
     i = 0
     while mic.stream.is_active():
         #Extract feature of available segments
@@ -111,18 +116,18 @@ async def featureextreaction(mic, nn, config, path = None, log_process = False):
             logger.debug("Filtering segment")
             if log_process:
                 time_start = datetime.now()
-            filtered_segment = Audio.bandpassfilter(segment["segment"], config["sampling rate"], config["cutoff"], config["order"])
+            filtered_segment = Audio.bandpassfilter(segment["segment"], config["sampling rate"], config["cutoff"], config["order"]) # type: ignore
 
             #Calculate the mel spectrogram
             logger.debug("Calculating mel spectrogram")
-            mel_spectrogram_db = Audio.getmelspectrogram(filtered_segment, config["sampling rate"], config["nfft"], config["hop length"], config["nmel"])
+            mel_spectrogram_db = Audio.getmelspectrogram(filtered_segment, config["sampling rate"], config["nfft"], config["hop length"], config["nmel"]) # type: ignore
 
             #Normalization
             logger.debug("Data normalization")
-            normalized_spectrogram_db = Audio.normalize(mel_spectrogram_db)
+            normalized_spectrogram_db = Audio.normalize(mel_spectrogram_db) # type: ignore
 
             if config["rbir"] is not None:
-                feature = Audio.RbIR(normalized_spectrogram_db, config["rbir"])
+                feature = Audio.RbIR(normalized_spectrogram_db, config["rbir"]) # type: ignore
             else:
                 feature = normalized_spectrogram_db
 
@@ -134,7 +139,7 @@ async def featureextreaction(mic, nn, config, path = None, log_process = False):
                 "time" : segment["time"]
             }
             if log_process:
-                preprocessed_data["preprocessing start"] = time_start
+                preprocessed_data["preprocessing start"] = time_start # type: ignore
                 preprocessed_data["preprocessing finish"] = datetime.now()
 
             #Save spectrogram
@@ -179,14 +184,14 @@ async def detection(mic, nn, th, config, csv_writer = None, log_process = False)
                 if log_process:
                     output["preprocessing start"] = buffer[i]["preprocessing start"]
                     output["preprocessing finish"] = buffer[i]["preprocessing finish"]
-                    output["detection start"] = time_start
-                    output["detection finish"] = time_finish
+                    output["detection start"] = time_start # type: ignore
+                    output["detection finish"] = time_finish # type: ignore
                     
                 outputs.append(output)
             
             if log_process:
                 try:
-                    csv_writer.writerows(outputs)
+                    csv_writer.writerows(outputs) # type: ignore
                 except AttributeError as e:
                     logger.error(e)
 
@@ -194,78 +199,15 @@ async def detection(mic, nn, th, config, csv_writer = None, log_process = False)
 
         await asyncio.sleep(0.01)
 
-def get():
+def getparam():
+    #Load required Libraries
+    from libs.michandler import Mic
+
     options = parser.parse_args()
 
     if options.param == "mic":
         available_devices = Mic.getdevices()
         logger.info("Get I/O Devices\nAvailable audio input : \n%s", pformat(available_devices))
-
-def initargs():
-    #Subparsers
-    subparsers = parser.add_subparsers(
-        title="Program MODE",
-        dest="mode",
-        metavar="MODE",
-        required=True,
-        description="Select Program Mode",
-        help=(
-            "Available MODE [run, get]."
-        )
-    )
-
-    #Running arguments
-    parser_run = subparsers.add_parser("run", aliases=["RUN"])
-    parser_run.add_argument(
-        "model",
-        metavar="MODEL_PATH",
-        help=(
-            "Provide model path. "
-            "MODEL_PATH must contain config.file. "
-        ),
-    )
-    parser_run.add_argument(
-        "threshold",
-        metavar="TH",
-        type=float,
-        choices=[Range(0.0, 1.0)],
-        help=(
-            "Provide threhold value. "
-            "TH must be a float between (0.0-1.0). "
-        ),
-    )
-    parser_run.add_argument(
-        "-mic",
-        "--mic-index",
-        metavar="MIC_INDEX",
-        type=int,
-        default=0,
-        help=(
-            "Select used microphone index from available microphone devices. "
-            "Use  main.py GET MIC  to get available microphone devices"
-        ),
-    )
-    parser_run.add_argument(
-        "--log-process",
-        action="store_true",
-        help=(
-            "Log processing time into xml file."
-        )
-    )
-
-    #Get arguments
-    parser_get = subparsers.add_parser('get', aliases=["GET"])
-    getparams = ["mic"]
-    parser_get.add_argument(
-        "param",
-        metavar="PARAM",
-        type=str.lower,
-        choices=getparams,
-        help=(
-            "Provide parameter you want to get. "
-            "Available PARAM %s" % {' , '.join(getparams)}
-        ),
-    )
 
 if __name__ == '__main__':
     main()

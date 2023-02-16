@@ -9,7 +9,7 @@ import numpy as np
 from tensorflow.keras.layers import Layer
 from tensorflow.keras.models import load_model
 from tensorflow.keras.utils import to_categorical
-from tensorflow.experimental.numpy import rot90
+from tensorflow.experimental.numpy import rot90 # type: ignore
 from PIL import Image
 
 logger = logging.getLogger(__name__)
@@ -46,14 +46,14 @@ class NN:
         """
         Print Model Summary
         """
-        self.__model.summary()
+        self.__model.summary() # type: ignore
 
     def predict(self, x):
         """
         Predict x using loaded model
         """
         #Predict input x, verbose 0=silent, 1=progress bar, 2=single line
-        y = self.__model.predict(x=np.array(x), verbose=0)
+        y = self.__model.predict(x=np.array(x), verbose=0) # type: ignore
         return y
     
     def thresholding(self, y, th):
