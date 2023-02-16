@@ -30,9 +30,6 @@ def main():
         running()
     elif str.lower(options.mode) == "get":
         get()
-    else:
-        parser.print_help(sys.stderr)
-        sys.exit(1)
 
 def running():
     options = parser.parse_args()
@@ -210,6 +207,7 @@ def initargs():
         title="Program MODE",
         dest="mode",
         metavar="MODE",
+        required=True,
         description="Select Program Mode",
         help=(
             "Available MODE [run, get]."
