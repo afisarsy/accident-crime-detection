@@ -27,7 +27,7 @@ def checkloglevel(log_level):
     return level
 
 #Default
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(prog="Accident Crime Detection")
 parser.add_argument(
     "-log",
     "--log",

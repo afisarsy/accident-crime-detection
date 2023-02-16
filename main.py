@@ -3,6 +3,7 @@ from pprint import pformat
 from datetime import datetime
 import asyncio
 import csv
+import sys
 
 import numpy as np
 
@@ -25,13 +26,15 @@ def main():
     options = parser.parse_known_args()[0]
     initlogger(options.log)
 
-    if options.mode == "run":
+    if str.lower(options.mode) == "run":
         running()
-    elif options.mode == "get":
+    elif str.lower(options.mode) == "get":
         get()
+    else:
+        parser.print_help(sys.stderr)
+        sys.exit(1)
 
 def running():
-    runargs()
     options = parser.parse_args()
 
     options.model = options.model.replace("\\","/")
@@ -195,7 +198,6 @@ async def detection(mic, nn, th, config, csv_writer = None, log_process = False)
         await asyncio.sleep(0.01)
 
 def get():
-    getargs()
     options = parser.parse_args()
 
     if options.param == "mic":
@@ -203,19 +205,20 @@ def get():
         logger.info("Get I/O Devices\nAvailable audio input : \n%s", pformat(available_devices))
 
 def initargs():
-    parser.add_argument(
-        "mode",
+    #Subparsers
+    subparsers = parser.add_subparsers(
+        title="Program MODE",
+        dest="mode",
         metavar="MODE",
-        type=str.lower,
-        choices=["run", "get"],
+        description="Select Program Mode",
         help=(
-            "Select Program Mode. "
-            "Available options RUN | GET"
+            "Available MODE [run, get]."
         )
     )
 
-def runargs():
-    parser.add_argument(
+    #Running arguments
+    parser_run = subparsers.add_parser("run", aliases=["RUN"])
+    parser_run.add_argument(
         "model",
         metavar="MODEL_PATH",
         help=(
@@ -223,7 +226,7 @@ def runargs():
             "MODEL_PATH must contain config.file. "
         ),
     )
-    parser.add_argument(
+    parser_run.add_argument(
         "threshold",
         metavar="TH",
         type=float,
@@ -233,7 +236,7 @@ def runargs():
             "TH must be a float between (0.0-1.0). "
         ),
     )
-    parser.add_argument(
+    parser_run.add_argument(
         "-mic",
         "--mic-index",
         metavar="MIC_INDEX",
@@ -244,7 +247,7 @@ def runargs():
             "Use  main.py GET MIC  to get available microphone devices"
         ),
     )
-    parser.add_argument(
+    parser_run.add_argument(
         "--log-process",
         action="store_true",
         help=(
@@ -252,16 +255,17 @@ def runargs():
         )
     )
 
-def getargs():
+    #Get arguments
+    parser_get = subparsers.add_parser('get', aliases=["GET"])
     getparams = ["mic"]
-    parser.add_argument(
+    parser_get.add_argument(
         "param",
         metavar="PARAM",
         type=str.lower,
         choices=getparams,
         help=(
             "Provide parameter you want to get. "
-            "MODEL_PATH must contain %s" % {' , '.join(getparams)}
+            "Available PARAM %s" % {' , '.join(getparams)}
         ),
     )
 
