@@ -56,14 +56,23 @@ class NN:
         y = self.__model.predict(x=np.array(x), verbose=0) # type: ignore
         return y
     
-    def thresholding(self, y, th):
+    def getclass(self, y):
         """
-        Threshold and mapping the prediction result
+        Get prediction class name
         """
-        output = []
-        for nn_result in y:
-            output.append(self.__output_map[self.__classes[11 if np.max(nn_result) < th else np.argmax(nn_result)]])
-        return output
+        return self.__classes[np.argmax(y)]
+    
+    def thresholding(self, nn_result, th):
+        """
+        Threshold the prediction result
+        """
+        return 11 if np.max(nn_result) < th else np.argmax(nn_result)
+    
+    def mapresult(self, result):
+        """
+        Map thresholding result using output map
+        """
+        return self.__output_map[self.__classes[result]]
     
     def add2buffer(self, x):
         """

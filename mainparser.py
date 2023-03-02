@@ -47,14 +47,21 @@ parser_run.add_argument(
     ),
 )
 parser_run.add_argument(
-    "-mic",
-    "--mic-index",
+    "-m",
+    "--mic",
     metavar="MIC_INDEX",
     type=int,
     default=0,
     help=(
         "Select used microphone index from available microphone devices. "
         "Use  main.py GET MIC  to get available microphone devices"
+    ),
+)
+parser_run.add_argument(
+    "--no-mqtt",
+    action="store_true",
+    help=(
+        "Disable MQTT communication."
     ),
 )
 parser_run.add_argument(
@@ -77,7 +84,7 @@ parser_run.add_argument(
 
 #Get arguments
 parser_get = subparsers.add_parser('get', aliases=["GET"])
-getparams = ["mic"]
+getparams = ["mic", "id"]
 parser_get.add_argument(
     "param",
     metavar="PARAM",
