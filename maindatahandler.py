@@ -9,15 +9,18 @@ class DataHandler:
     """
     Data Handler class
     """
-    __data = []
-    __min_length = 10
-    __gps_tollerance = 10 #in meters
-    __last_data = {
+    __initial_data = {
         "status": "",
         "lat": 2,
         "lng": 2
     }
+    __data = []
+    __min_length = 3
+    __gps_tollerance = 10 #in meters
+    __last_data = __initial_data
     __last_valid_status = ""
+    __callibration_cycle_total = 5
+    __callibration_cycle_index = 0
 
     def __init__(self, conf:Dict = {}):
         """
@@ -25,9 +28,11 @@ class DataHandler:
         """
         #Set config if provided
         if all(param in conf.keys() for param in ["segment duration", "overlap ratio", "min duration"]):
-            self.__min_length = math.ceil(conf["min duration"] * 1000. / conf["segment duration"] * conf["overlap ratio"])
+            self.__min_length = math.ceil((conf["min duration"] * 1000.) / (conf["segment duration"] * conf["overlap ratio"]))
         if "gps tollerance" in conf.keys():
             self.__gps_tollerance = conf["gps tollerance"]
+        if "callibration cylce" in conf.keys():
+            self.__callibration_cycle_total = conf["callibration cylce"]
         if "min length" in conf.keys():
             self.__min_length = conf["min length"]
     
@@ -42,17 +47,21 @@ class DataHandler:
             if len(self.__data) > self.__min_length + 1:
                 self.__data.pop(0)
         else:
-            self.__data = []
+            self.__data = [new_data]
         
-        #Get data gps mean location
-        mean_loc = {
-            "lat": mean([data["lat"] for data in self.__data]),
-            "lng": mean([data["lng"] for data in self.__data])
-        }
-        #Status persist for specified duration or gps moved beyond gps tollerance distance
-        if (len(self.__data) == self.__min_length and new_data["status"] != self.__last_valid_status) or DataHandler.gps_get_distance(mean_loc, new_data) > self.__gps_tollerance:
-            self.__last_valid_status = new_data["status"]
-            is_new = True
+        #Ignore the first data (Callibration)
+        if self.__callibration_cycle_index < self.__callibration_cycle_total:
+            self.__callibration_cycle_index += 1
+        else:
+            #Get data gps mean location
+            mean_loc = {
+                "lat": mean([data["lat"] for data in self.__data]),
+                "lng": mean([data["lng"] for data in self.__data])
+            }
+            #Status persist for specified duration or gps moved beyond gps tollerance distance
+            if (len(self.__data) == self.__min_length and new_data["status"] != self.__last_valid_status) or DataHandler.gps_get_distance(mean_loc, new_data) > self.__gps_tollerance:
+                self.__last_valid_status = new_data["status"]
+                is_new = True
 
         #Update last data
         self.__last_data = new_data

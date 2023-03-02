@@ -163,7 +163,7 @@ async def detection(mic, nn, th, config, options, mqtt_config={}, mqtt_topic="")
     data_handler = DataHandler({
         "segment duration": config["segment duration"],
         "overlap ratio": config["overlap ratio"],
-        "min duration": 2,          #in seconds
+        "min duration": 1,          #in seconds
         "gps tollerance": 10        #in meters
     })
 
