@@ -14,7 +14,7 @@ class GPS:
 
     #config
     __port = ""
-    __baud_rate = 19200
+    __baudrate = 19200
     __serial = None
     __serial_io = None
     __location = {
@@ -28,9 +28,9 @@ class GPS:
         """
         #Set config
         self.__port = conf["port"]
-        self.__baud_rate = conf["baud rate"]
+        self.__baudrate = conf["baudrate"]
 
-        self.__serial = serial.Serial(port=self.__port, baudrate=self.__baud_rate, rtscts=1)
+        self.__serial = serial.Serial(port=self.__port, baudrate=self.__baudrate, rtscts=1)
         self.__serial_io = io.TextIOWrapper(io.BufferedRWPair(self.__serial, self.__serial))
 
     def start(self):
