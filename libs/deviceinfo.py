@@ -22,6 +22,11 @@ SUPPORTED_DEVICES = [
 ]
 
 class __Device:
+    """
+    Device Object
+    """
+
+    #config
     __device_type = 0
     __device_id = ""
 

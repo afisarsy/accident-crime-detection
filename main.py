@@ -1,3 +1,4 @@
+from curses import baudrate
 import json
 import logging
 from pprint import pformat
@@ -28,22 +29,9 @@ def main():
         getparam()
 
 def running():
-    #Load required Libraries
-    from libs.configmodule import loadconfig
-    from libs.michandler import Mic
-    from libs.nnmodule import NN, Rot90
-
     options = parser.parse_args()
 
-    #Model Initialization
-    options.model = options.model.replace("\\","/")
-    config = loadconfig(options.model)
-    custom_objects = {"Rot90" : Rot90}
-
-    logger.info("Using model %s", options.model)
-    logger.info("Loading Config File\nConfig : \n%s",pformat(config))
-
-    #MQTT initialization
+    #MQTT config
     mqtt_config = {
         "host": "103.106.72.182",
         "port": 1887
@@ -53,8 +41,27 @@ def running():
         "test": "acd/test/"
     }
 
+    #gps config
+    gps_config = {
+        "port": "/dev/ttyS0",
+        "baudrate": 9600
+    }
+    
+    #Model Initialization
+    from libs.configmodule import loadconfig
+    from libs.nnmodule import NN, Rot90
+    
+    options.model = options.model.replace("\\","/")
+
+    model_config = loadconfig(options.model)
+    custom_objects = {"Rot90" : Rot90}
+
+    logger.info("Using model %s", options.model)
+    logger.info("Loading Config File\nConfig : \n%s",pformat(model_config))
+
     #mic initialization
-    mic = Mic(config)
+    from libs.michandler import Mic
+    mic = Mic(model_config)
     mic.selectdevice(options.mic)
     mic.getselecteddevice()
     #start audio stream
@@ -77,12 +84,13 @@ def running():
     }
 
     #NN initialization
-    nn = NN(options.model, custom_objects, output_map, config)
+    nn = NN(options.model, custom_objects, output_map, model_config)
 
     #tasks declaration
     tasks = asyncio.gather(
-        loop.create_task(featureextreaction(mic, nn, config, options, "Tests/save_spectrogram/spectrogram")),
-        loop.create_task(detection(mic, nn, options.threshold, config, options, mqtt_config=mqtt_config, mqtt_topic=mqtt_topics["test"]))
+        loop.create_task(featureextreaction(options, mic, nn, model_config, "Tests/save_spectrogram/spectrogram")),
+        loop.create_task(detection(options, mic, nn, options.threshold, model_config, mqtt_config, mqtt_topic=mqtt_topics["test"])),
+        loop.create_task(gpsread(gps_config, mic))
     )
 
     try:
@@ -99,13 +107,12 @@ def running():
         loop.run_until_complete(loop.shutdown_asyncgens())
         #loop.close()
 
-async def featureextreaction(mic, nn, config, options, path = None):
+async def featureextreaction(options, mic, nn, model_config, path = ""):
     """
     Feature extraction task
     """
     #Load required Libraries
-    if 'Audio' not in dir():
-        from libs.audiomodule import Audio
+    from libs.audiomodule import Audio
 
     i = 0
     while mic.stream.is_active():
@@ -115,18 +122,18 @@ async def featureextreaction(mic, nn, config, options, path = None):
             logger.debug("Filtering segment")
             if options.log_process:
                 time_start = datetime.now()
-            filtered_segment = Audio.bandpassfilter(segment["segment"], config["sampling rate"], config["cutoff"], config["order"]) # type: ignore
+            filtered_segment = Audio.bandpassfilter(segment["segment"], model_config["sampling rate"], model_config["cutoff"], model_config["order"])
 
             #Calculate the mel spectrogram
             logger.debug("Calculating mel spectrogram")
-            mel_spectrogram_db = Audio.getmelspectrogram(filtered_segment, config["sampling rate"], config["nfft"], config["hop length"], config["nmel"]) # type: ignore
+            mel_spectrogram_db = Audio.getmelspectrogram(filtered_segment, model_config["sampling rate"], model_config["nfft"], model_config["hop length"], model_config["nmel"])
 
             #Normalization
             logger.debug("Data normalization")
             normalized_spectrogram_db = Audio.normalize(mel_spectrogram_db) # type: ignore
 
-            if config["rbir"] is not None:
-                feature = Audio.RbIR(normalized_spectrogram_db, config["rbir"]) # type: ignore
+            if model_config["rbir"] is not None:
+                feature = Audio.RbIR(normalized_spectrogram_db, model_config["rbir"]) # type: ignore
             else:
                 feature = normalized_spectrogram_db
 
@@ -152,17 +159,17 @@ async def featureextreaction(mic, nn, config, options, path = None):
 
             i += 1
 
-        await asyncio.sleep(config["segment duration"] * config["overlap ratio"] / 1000)
+        await asyncio.sleep(model_config["segment duration"] * model_config["overlap ratio"] / 1000)
 
-async def detection(mic, nn, th, config, options, mqtt_config={}, mqtt_topic=""):
+async def detection(options, mic, nn, th, model_config, mqtt_config={}, mqtt_topic=""):
     """
     Classification and Thresholding task
     """
     #Initalize data handler
     from maindatahandler import DataHandler
     data_handler = DataHandler({
-        "segment duration": config["segment duration"],
-        "overlap ratio": config["overlap ratio"],
+        "segment duration": model_config["segment duration"],
+        "overlap ratio": model_config["overlap ratio"],
         "min duration": 1,          #in seconds
         "gps tollerance": 10        #in meters
     })
@@ -253,6 +260,22 @@ async def detection(mic, nn, th, config, options, mqtt_config={}, mqtt_topic="")
     #Close csv file
     if options.log_process:
         log_process_file.close() # type: ignore
+
+async def gpsread(gps_config, mic):
+    """
+    GPS reading task
+    """
+    #Initialize gps module
+    from libs.gpsmodule import GPS
+    gps = GPS(gps_config)
+
+    while mic.stream.is_active():
+        gps.read_serial()
+
+        await asyncio.sleep(5)
+
+    #Stop gps serial connection
+    gps.stop()
 
 def getparam():
     #Load required Libraries

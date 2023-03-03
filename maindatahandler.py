@@ -28,7 +28,7 @@ class DataHandler:
         """
         #Set config if provided
         if all(param in conf.keys() for param in ["segment duration", "overlap ratio", "min duration"]):
-            self.__min_length = math.ceil((conf["min duration"] * 1000.) / (conf["segment duration"] * conf["overlap ratio"]))
+            self.__min_length = max(math.ceil((conf["min duration"] * 1000.) / (conf["segment duration"] * conf["overlap ratio"])) - 1, 1)
         if "gps tollerance" in conf.keys():
             self.__gps_tollerance = conf["gps tollerance"]
         if "callibration cylce" in conf.keys():

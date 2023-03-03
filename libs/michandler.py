@@ -1,3 +1,4 @@
+from typing import Dict
 import logging
 from pprint import pformat
 from datetime import datetime
@@ -34,7 +35,7 @@ class Mic:
     __streambits = None
     __segment = []
 
-    def __init__(self, conf):
+    def __init__(self, conf:Dict):
         """
         Create Microphone Object
         """
