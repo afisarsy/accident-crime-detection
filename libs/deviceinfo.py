@@ -36,7 +36,7 @@ class __Device:
             device_name = str(subprocess.check_output("cat /proc/device-tree/model", shell=True).decode("utf-8")).replace("\n","").replace("\r","").replace("\x00","").replace("SerialNumber","")
             self.__device_type = next(iter([ i for i, device in enumerate(SUPPORTED_DEVICES) if device["name"] in device_name]), 0)
 
-        self.__device_id = subprocess.check_output(SUPPORTED_DEVICES[self.__device_type]["serial_number_command"], shell=True).decode("utf-8").replace("\n","").replace("\r","").replace(" ","").replace("SerialNumber","")
+        self.__device_id = subprocess.check_output(SUPPORTED_DEVICES[self.__device_type]["serial_number_command"], shell=True).decode("utf-8").replace("\n","").replace("\r","").replace("\x00","").replace(" ","").replace("SerialNumber","")
     
     def gettype(self):
         return self.__device_type
