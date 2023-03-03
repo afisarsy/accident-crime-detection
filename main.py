@@ -1,4 +1,3 @@
-from curses import baudrate
 import json
 import logging
 from pprint import pformat
