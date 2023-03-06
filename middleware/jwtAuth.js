@@ -1,5 +1,8 @@
 const jwt = require('jsonwebtoken');
 
+let debug = require('debug')('ACD:webserver:JWTAuth');
+debug.log = console.log.bind(console)
+
 let Response = require('../models/responseModel');
 let User = require('../models/userModel');
 
@@ -25,7 +28,7 @@ module.exports.verifyToken = (req, res, next) => {
                     console.error("%d - %s from %s | %s errors: %s\nRequest data\n%s", code, route, ip, "JWT_AUTH", err, req)
                     res.status(code).send(response);
                 } else {
-                    console.log(data);
+                    debug(data);
                     req.user = data;
                     next();
                 }

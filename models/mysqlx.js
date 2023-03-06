@@ -1,5 +1,6 @@
 let mysqlx = require('@mysql/xdevapi');
-let debug = require('debug')('app:mysqlx');
+let debug = require('debug')('ACD:mysqlx');
+debug.log = console.log.bind(console)
 let dataFunction = require('../functions/dataFunction');
 
 let config = {
@@ -10,7 +11,7 @@ let config = {
     schema: process.env.MYSQL_SCHEMA
 };
 
-let client = mysqlx.getClient(config, { pooling: { enabled: true, maxSize: 5 } });
+let client = mysqlx.getClient(config, { pooling: { enabled: true, maxSize: 5, maxIdleTime: 2, queueTimeout: 2 } });
 
 // Connection test
 client.getSession()

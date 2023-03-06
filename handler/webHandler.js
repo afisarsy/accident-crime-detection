@@ -3,6 +3,7 @@ let express = require('express');
 let cors = require('cors')
 let path = require('path');
 let cookieParser = require('cookie-parser');
+let timeout = require('connect-timeout')
 let logger = require('morgan');
 
 let mqtt = require('./mqttHandler');
@@ -19,11 +20,13 @@ let app = express();
 app.set('views', path.join(__dirname, '../views'));
 app.set('view engine', 'jade');
 
+app.use(timeout('5s'));
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, '../public')));
+app.use(haltOnTimedout);
 
 app.use('', cors(), usersRouter);
 app.use('', cors(), devicesRouter);
@@ -52,5 +55,9 @@ app.use(function(err, req, res, next) {
   res.status(err.status || 500);
   res.render('error');
 });
+
+function haltOnTimedout (req, res, next) {
+  if (!req.timedout) next()
+}
 
 module.exports = app;

@@ -1,6 +1,7 @@
 let Response = require('../models/responseModel');
 let Device = require('../models/deviceModel');
-let debug = require('debug')('app:server:controller:device');
+let debug = require('debug')('ACD:webserver:controller:device');
+debug.log = console.log.bind(console)
 
 exports.register = (req, res) => {
     var ip = (req.headers['x-forwarded-for'] || req.connection.remoteAddress || '').split(',')[0].trim();

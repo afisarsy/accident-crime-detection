@@ -14,6 +14,7 @@ module.exports.findAllDeviceData = (ownerId, from, to, result) => {
 			let deviceIds = rows.map(data => data[0]);
 			let deviceNames = rows.map(data => data[1]);
 			if(deviceIds.length < 1){
+				session.close();
 				result({code: 404, type: "USER_HAS_NO_DEVICE", error: `User ${ownerId} has 0 registered device`, query: get_devices_by_owner_id_query}, null);
 				return;
 			}
@@ -36,6 +37,7 @@ module.exports.findAllDeviceData = (ownerId, from, to, result) => {
 			})
 			.then(() => {
 				if(docs.length == 0) {
+					session.close();
 					result({code: 404, type: "NODE_DATA_FIND_ALL_0_ROW", error: "No data found", query: find_all_node_data_query}, null);
 					return;
 				}
@@ -60,6 +62,7 @@ module.exports.findByDeviceId = (ownerId, deviceId, limit, result) => {
 		session.sql(user_has_device_with_id_query).execute()
 		.then((res) => {
 			if(res.fetchAll().length < 1){
+				session.close();
 				result({code: 404, type: "USER_HAS_NO_DEVICE_WITH_ID", error: `Device ${deviceId} not found`, query: user_has_device_with_id_query}, null);
 				return;
 			}
@@ -79,6 +82,7 @@ module.exports.findByDeviceId = (ownerId, deviceId, limit, result) => {
 			query.execute(doc => docs.push(doc))
 			.then(() => {
 				if(docs.length == 0) {
+					session.close();
 					result({code: 404, type: "NODE_DATA_FIND_BY_DEVICE_ID_0_ROW", error: "No data found", query: find_node_data_query}, null);
 					return;
 				}

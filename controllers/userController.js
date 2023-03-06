@@ -4,7 +4,8 @@ let DataFunction = require('../functions/dataFunction');
 let Response = require('../models/responseModel');
 let User = require('../models/userModel');
 
-let debug = require('debug')('app:server:controller:user');
+let debug = require('debug')('ACD:webserver:controller:user');
+debug.log = console.log.bind(console)
 
 exports.register = (req, res) => {
     var ip = (req.headers['x-forwarded-for'] || req.connection.remoteAddress || '').split(',')[0].trim();

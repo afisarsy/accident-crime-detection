@@ -1,4 +1,5 @@
-let debug = require('debug')('app:mqtt');
+let debug = require('debug')('ACD:mqtt');
+debug.log = console.log.bind(console)
 
 let mqtt = require('../models/mqtt');
 let Node = require('./nodeHandler')

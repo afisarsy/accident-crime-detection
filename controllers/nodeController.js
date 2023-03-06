@@ -1,6 +1,7 @@
 let Response = require('../models/responseModel');
 let Node = require('../models/nodeModel');
-let debug = require('debug')('app:server:controller:node');
+let debug = require('debug')('ACD:webserver:controller:node');
+debug.log = console.log.bind(console)
 let {DateTime} = require('luxon');
 
 exports.getAllData = (req, res) => {

@@ -1,5 +1,6 @@
 let mysql = require('mysql2');
-let debug = require('debug')('app:mysql');
+let debug = require('debug')('ACD:mysql');
+debug.log = console.log.bind(console)
 
 let config = {
     host: process.env.MYSQL_HOST || 'localhost',

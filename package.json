@@ -4,11 +4,13 @@
   "description": "Backend service for Admin Map Webservice",
   "scripts": {
     "start": "node ./bin/www",
+    "debug": "set DEBUG=express:* & node ./bin/www",
     "test": "node ./bin/test"
   },
   "dependencies": {
     "@mysql/xdevapi": "^8.0.26",
     "bcrypt": "^5.1.0",
+    "connect-timeout": "^1.9.0",
     "cookie-parser": "~1.4.4",
     "cors": "^2.8.5",
     "debug": "~2.6.9",

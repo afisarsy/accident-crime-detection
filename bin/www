@@ -18,7 +18,8 @@ if(process.env.NODE_ENV === 'development')	console.debug(env.parsed);
  */
 
 let app = require('../handler/webHandler');
-let serverDebug = require('debug')('app:server');
+let debug = require('debug')('ACD:webserver');
+debug.log = console.log.bind(console)
 let http = require('http');
 
 /**
@@ -87,5 +88,5 @@ function onError(error) {
 function onListening() {
   let addr = server.address().address;
   let port = server.address().port;
-  serverDebug('Listening on ' + addr + ':' + port);
+  debug('Listening on ' + addr + ':' + port);
 }

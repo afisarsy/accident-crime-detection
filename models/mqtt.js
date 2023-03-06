@@ -1,5 +1,6 @@
 let mqtt = require('mqtt');
-let debug = require('debug')('app:mqtt');
+let debug = require('debug')('ACD:mqtt');
+debug.log = console.log.bind(console)
 
 let config = {
     host: process.env.MQTT_HOST || 'localhost',
