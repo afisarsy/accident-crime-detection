@@ -20,7 +20,7 @@ let app = express();
 app.set('views', path.join(__dirname, '../views'));
 app.set('view engine', 'jade');
 
-app.use(timeout('5s'));
+app.use(timeout('3s'));
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
