@@ -20,9 +20,6 @@ class RequestModifier
         $headers['X-Forwarded-Host'] = $request->getServer('HTTP_HOST');
         $headers['X-Forwarded-Proto'] = strtolower(explode('/', $request->getServer('SERVER_PROTOCOL'))[0]);
 
-        //Reset Connection to avoid gateway timeout
-        $headers['Connection'] = '';
-
         return $headers;
     }
 }
