@@ -14,14 +14,14 @@ module.exports.findAllDeviceData = (ownerId, from, to, result) => {
 			let deviceIds = rows.map(data => data[0]);
 			let deviceNames = rows.map(data => data[1]);
 			if(deviceIds.length < 1){
-				result({code: 404, type: "USER_HAS_NO_DEVICE_WITH_ID", error: `User ${ownerId} has 0 registered device`, query: user_has_device_with_id_query}, null);
+				result({code: 404, type: "USER_HAS_NO_DEVICE", error: `User ${ownerId} has 0 registered device`, query: get_devices_by_owner_id_query}, null);
 				return;
 			}
 
 			//Get user's nodes data
 			let collection = session.getDefaultSchema().getCollection("node_data");
 			let docs = [];
-			var query = collection.find(`( ${mysqlxFunction.array2OrQuery('device_id', deviceIds)} ) AND timestamp BETWEEN :from AND :to`).bind('from', from).bind('to', to).sort('timestamp desc');
+			var query = collection.find(`( ${mysqlxFunction.array2OrQuery('device_id', deviceIds)} ) AND timestamp BETWEEN '${from}' AND '${to}'`).sort('timestamp desc');
 			var find_all_node_data_query = {
 				schema: query.getSchema().getName(),
 				collection: query.getTableName(),
