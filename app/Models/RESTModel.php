@@ -15,7 +15,10 @@ class RESTModel extends Model
 
         helper(['ExtendUrl']);
 
-        $this->client = \Config\Services::curlrequest();
+        $options = [
+            'timeout' => 3
+        ];
+        $this->client = \Config\Services::curlrequest($options);
     }
 
     //====================================================
