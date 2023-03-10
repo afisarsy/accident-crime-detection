@@ -4,7 +4,7 @@ import json
 logger = logging.getLogger(__name__)
 extension = ".conf"
 
-def loadconfig(model_path):
+def loadconfig(model_path) -> dict:
     config_file = model_path[:model_path.rfind('.h5')] + extension
     config = dict()
     try:

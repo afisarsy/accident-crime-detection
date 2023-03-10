@@ -1,6 +1,5 @@
 import logging
 import json
-from datetime import datetime
 from typing import Dict
 
 from libs.deviceinfo import device
@@ -68,40 +67,3 @@ class MQTT:
 
     def publishdata(self, topic, data):
         self.__client.publish(topic + device.getid(), json.dumps(data))
-
-def main():
-    config = {
-        "host": "103.106.72.182",
-        "port": 1887,
-        "subscribe_topics": [
-            "test1",
-            "sub/test2"
-        ]
-    }
-    topics = {
-        "data": "acd/node/",
-        "test": "acd/test/"
-    }
-
-    mqtt_client = MQTT(conf=config)
-
-    data = {
-        "lat": 1.32131331,
-        "lng": 0.42131312,
-        "status": "normal",
-        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    }
-
-    try:
-        while(not mqtt_client.connected):
-            pass
-        mqtt_client.publishdata(topics["test"], data)
-        while(mqtt_client.connected):
-            pass
-    except KeyboardInterrupt as e:
-        pass
-    finally:
-        mqtt_client.stopmqtt()
-
-if __name__ == '__main__':
-    main()

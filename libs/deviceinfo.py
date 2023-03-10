@@ -1,6 +1,5 @@
 import sys
 import subprocess
-from unicodedata import name
 
 SUPPORTED_DEVICES = [
     {

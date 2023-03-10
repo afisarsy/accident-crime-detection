@@ -1,4 +1,7 @@
 import argparse
+from random import choices
+
+from tensorboard import program
 
 from libs.argparserbase import checkloglevel, Range
 
@@ -14,20 +17,20 @@ parser.add_argument(
     )
 )
 
-#Subparsers
-subparsers = parser.add_subparsers(
+#subparser mode
+subparser_mode = parser.add_subparsers(
     title="Program MODE",
     dest="mode",
     metavar="MODE",
     required=True,
     description="Select Program Mode",
     help=(
-        "Available MODE [run, get]."
+        "Available MODE [run, get, test]."
     )
 )
 
 #Running arguments
-parser_run = subparsers.add_parser("run", aliases=["RUN"])
+parser_run = subparser_mode.add_parser("run", aliases=["RUN"])
 parser_run.add_argument(
     "model",
     metavar="MODEL_PATH",
@@ -83,7 +86,7 @@ parser_run.add_argument(
 )
 
 #Get arguments
-parser_get = subparsers.add_parser('get', aliases=["GET"])
+parser_get = subparser_mode.add_parser('get', aliases=["GET"])
 getparams = ["mic", "id"]
 parser_get.add_argument(
     "param",
@@ -94,4 +97,64 @@ parser_get.add_argument(
         "Provide parameter you want to get. "
         "Available PARAM %s" % {' , '.join(getparams)}
     ),
+)
+
+#Tests arguments
+parser_test = subparser_mode.add_parser("test", aliases=["TEST"])
+subparser_test = parser_test.add_subparsers(
+    title="Unit Test",
+    dest="test_mode",
+    metavar="NAME",
+    required=True,
+    description="Select Test NAME",
+    help=(
+        "Available test NAME [mqtt, gps]."
+    )
+)
+
+perser_test_mqtt = subparser_test.add_parser("mqtt", aliases=["MQTT"])
+perser_test_mqtt.add_argument(
+    "--host",
+    metavar="HOST",
+    type=str,
+    default="localhost",
+    help=(
+        "Provide MQTT broker hostname or IP address."
+    )
+)
+perser_test_mqtt.add_argument(
+    "--port",
+    metavar="PORT",
+    type=int,
+    default=1883,
+    help=(
+        "Provide MQTT broker Port."
+    )
+)
+perser_test_mqtt.add_argument(
+    "topic",
+    metavar="TOPIC",
+    type=str,
+    help=(
+        "Provide MQTT topic."
+    )
+)
+
+parser_test_gps = subparser_test.add_parser("gps", aliases=["GPS"])
+parser_test_gps.add_argument(
+    "port",
+    metavar="PORT",
+    help=(
+        "Provide serial port."
+    )
+)
+parser_test_gps.add_argument(
+    "--baudrate",
+    metavar="BAUDRATE",
+    type=int,
+    default=9600,
+    help=(
+        "Provide BAUDRATE. "
+        "Default 9600"
+    )
 )

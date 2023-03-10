@@ -23,7 +23,7 @@ class Mic:
     __overlap_ratio = None
 
     #mic device params
-    __mic = None
+    __mic = pyaudio.PyAudio()
     __selected_device_index = 0
     __available_devices = {}
 
@@ -40,7 +40,6 @@ class Mic:
         Create Microphone Object
         """
         #Mic initialization
-        self.__mic = pyaudio.PyAudio()
         self.__available_devices = Mic.getdevices()
 
         #Load scheme

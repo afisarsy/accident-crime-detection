@@ -1,10 +1,6 @@
-import json
 import logging
 from pprint import pformat
-from datetime import datetime
 import asyncio
-
-import numpy as np
 
 from mainparser import parser
 from libs.logger import initlogger
@@ -26,8 +22,14 @@ def main():
         running()
     elif str.lower(options.mode) == "get":
         getparam()
+    elif str.lower(options.mode) == "test":
+        test()
+
 
 def running():
+    """
+    Run accident and Crime Detection System
+    """
     options = parser.parse_args()
 
     #MQTT config
@@ -38,12 +40,6 @@ def running():
     mqtt_topics = {
         "data": "acd/node/",
         "test": "acd/test/"
-    }
-
-    #gps config
-    gps_config = {
-        "port": "/dev/ttyS0",
-        "baudrate": 9600
     }
     
     #Model Initialization
@@ -57,6 +53,25 @@ def running():
 
     logger.info("Using model %s", options.model)
     logger.info("Loading Config File\nConfig : \n%s",pformat(model_config))
+
+    #Initialize gps module
+    from libs.gpsmodule import GPS
+
+    #gps config
+    gps_config = {
+        "port": "",
+        "baudrate": 9600
+    }
+    if device.getname() == "Raspberry Pi":
+        gps_config["port"] = "/dev/ttyS0"
+    elif device.getname() == "Jetson Nano":
+        gps_config["port"] = "/dev/ttyTHS1"
+    elif device.getname() == "Windows PC":
+        gps_config["port"] = "COM8"
+    else:
+        gps_config["port"] = "/dev/ttyACM0"
+        
+    gps = GPS(gps_config)
 
     #mic initialization
     from libs.michandler import Mic
@@ -86,10 +101,11 @@ def running():
     nn = NN(options.model, custom_objects, output_map, model_config)
 
     #tasks declaration
+    from maintasks import featureextreaction, detection, gpsread
     tasks = asyncio.gather(
         loop.create_task(featureextreaction(options, mic, nn, model_config, "Tests/save_spectrogram/spectrogram")),
-        loop.create_task(detection(options, mic, nn, options.threshold, model_config, mqtt_config, mqtt_topic=mqtt_topics["test"])),
-        loop.create_task(gpsread(gps_config, mic))
+        loop.create_task(gpsread(gps, mic)),
+        loop.create_task(detection(options, mic, nn, options.threshold, model_config, gps, mqtt_config, mqtt_topic=mqtt_topics["test"]))
     )
 
     try:
@@ -106,177 +122,11 @@ def running():
         loop.run_until_complete(loop.shutdown_asyncgens())
         #loop.close()
 
-async def featureextreaction(options, mic, nn, model_config, path = ""):
-    """
-    Feature extraction task
-    """
-    #Load required Libraries
-    from libs.audiomodule import Audio
-
-    i = 0
-    while mic.stream.is_active():
-        #Extract feature of available segments
-        for segment in mic.popallsegments():
-            #Apply bandpass filter
-            logger.debug("Filtering segment")
-            if options.log_process:
-                time_start = datetime.now()
-            filtered_segment = Audio.bandpassfilter(segment["segment"], model_config["sampling rate"], model_config["cutoff"], model_config["order"])
-
-            #Calculate the mel spectrogram
-            logger.debug("Calculating mel spectrogram")
-            mel_spectrogram_db = Audio.getmelspectrogram(filtered_segment, model_config["sampling rate"], model_config["nfft"], model_config["hop length"], model_config["nmel"])
-
-            #Normalization
-            logger.debug("Data normalization")
-            normalized_spectrogram_db = Audio.normalize(mel_spectrogram_db) # type: ignore
-
-            if model_config["rbir"] is not None:
-                feature = Audio.RbIR(normalized_spectrogram_db, model_config["rbir"]) # type: ignore
-            else:
-                feature = normalized_spectrogram_db
-
-            #Check input data
-            logger.debug(feature)
-
-            preprocessed_data = {
-                "spectrogram" : feature,
-                "time" : segment["time"]
-            }
-            if options.log_process:
-                preprocessed_data["preprocessing start"] = time_start # type: ignore
-                preprocessed_data["preprocessing finish"] = datetime.now()
-
-            #Save spectrogram
-            #For testing purpose
-            #if path not None:
-                #Audio.savemel(feature, path + "-" + str(i) + ".png")
-                #logger.info("Spectrogram saved to %s", path + "-" + str(i) + ".png")
-
-            #Add feature to buffer
-            nn.add2buffer(preprocessed_data)
-
-            i += 1
-
-        await asyncio.sleep(model_config["segment duration"] * model_config["overlap ratio"] / 1000)
-
-async def detection(options, mic, nn, th, model_config, mqtt_config={}, mqtt_topic=""):
-    """
-    Classification and Thresholding task
-    """
-    #Initalize data handler
-    from maindatahandler import DataHandler
-    data_handler = DataHandler({
-        "segment duration": model_config["segment duration"],
-        "overlap ratio": model_config["overlap ratio"],
-        "min duration": 1,          #in seconds
-        "gps tollerance": 10        #in meters
-    })
-
-    #Initialize MQTT if enabled
-    if not options.no_mqtt:
-        from libs.mqttmodule import MQTT
-        mqtt_client = MQTT(conf=mqtt_config)
-
-    #Initialize Logging to csv if enabled
-    if options.log_process:
-        import csv
-
-        process_log_path = "Tests/save_log_process"
-        process_log_file = options.model[(options.model.rfind('/')+1):-3] + "_" + str(options.threshold) + "_" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".csv"
-        log_process_file = open(process_log_path + "/" + process_log_file, 'w', newline='')
-
-        #Write Header
-        header = ["time", "preprocessing start", "preprocessing finish", "detection start", "detection finish", "prediction", "confidence", "conclusion"]
-        csv_writer = csv.DictWriter(log_process_file, header)
-        csv_writer.writeheader()
-
-    while mic.stream.is_active():
-        #Classification
-        buffer = nn.popallbuffer()
-        if len(buffer) > 0:
-            logger.info("Predicting %i batch of data", len(buffer))
-            if options.log_process:
-                time_start = datetime.now()
-            nn_predictions = nn.predict([data["spectrogram"] for data in buffer])
-            #logger.debug("Prediction %s", nn_predictions)
-
-            outputs = []
-            for i, nn_prediction in enumerate(nn_predictions):
-                #Thresholding
-                result = nn.thresholding(nn_prediction, th)
-
-                #Map result using output map
-                output = nn.mapresult(result)
-
-                #Data filtering
-                data = {
-                    "lat": 1.32131331,
-                    "lng": 0.42131312,
-                    "status": output,
-                    "timestamp": buffer[i]["time"].strftime("%Y-%m-%d %H:%M:%S")
-                }
-
-                if data_handler.submit(data):
-                    logger.info("Result : %s", data)
-                    if not options.no_mqtt:
-                        mqtt_client.publishdata(mqtt_topic, data) # type: ignore
-
-                #Comprehend data
-                outputs.append(output)
-
-            #Logging
-            if options.log_process:
-                time_finish = datetime.now()
-            process_logs = []
-            for i, output in enumerate(outputs):
-                process_log = {
-                    "time" : buffer[i]["time"],
-                    "prediction" : nn.getclass(nn_predictions[i]),
-                    "confidence" : np.max(nn_predictions[i]),
-                    "conclusion" : output
-                }
-                if options.log_process:
-                    process_log["preprocessing start"] = buffer[i]["preprocessing start"]
-                    process_log["preprocessing finish"] = buffer[i]["preprocessing finish"]
-                    process_log["detection start"] = time_start # type: ignore
-                    process_log["detection finish"] = time_finish # type: ignore
-                    
-                process_logs.append(process_log)
-            
-            if options.log_process:
-                try:
-                    csv_writer.writerows(process_logs) # type: ignore
-                except AttributeError as e:
-                    logger.error(e)
-
-        await asyncio.sleep(0.01)
-
-    #Disconnect MQTT
-    if not options.no_mqtt:
-        mqtt_client.stopmqtt() # type: ignore
-
-    #Close csv file
-    if options.log_process:
-        log_process_file.close() # type: ignore
-
-async def gpsread(gps_config, mic):
-    """
-    GPS reading task
-    """
-    #Initialize gps module
-    from libs.gpsmodule import GPS
-    gps = GPS(gps_config)
-
-    while mic.stream.is_active():
-        gps.read_serial()
-
-        await asyncio.sleep(5)
-
-    #Stop gps serial connection
-    gps.stop()
 
 def getparam():
+    """
+    Get available params
+    """
     #Load required Libraries
     from libs.michandler import Mic
 
@@ -287,6 +137,58 @@ def getparam():
         logger.info("Get I/O Devices\nAvailable audio input : \n%s", pformat(available_devices))
     elif options.param == "id":
         logger.info("Get Device ID\nDevice ID : %s", device.getid())
+
+
+def test():
+    """
+    Run unit test
+    """
+
+    options = parser.parse_args()
+
+    if options.test_mode == "mqtt":
+        logger.info("MQTT test")
+        from libs.mqttmodule import MQTT
+        from datetime import datetime
+        from libs.deviceinfo import device
+        config = {
+            "host": options.host,
+            "port": options.port
+        }
+        mqtt_client = MQTT(conf=config)
+        data = {
+            "lat": 1.32131331,
+            "lng": 0.42131312,
+            "status": "normal",
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+        try:
+            while(not mqtt_client.connected):
+                pass
+            logger.info("Sendind data with topic {}\n\t\t\t\t\t\t\t  - Data: {}".format(options.topic + device.getid(), data))
+            mqtt_client.publishdata(options.topic, data)
+            logger.info("Data Sent")
+            logger.info("Press Ctrl+C to exit")
+            while(mqtt_client.connected):
+                pass
+        except KeyboardInterrupt as e:
+            pass
+        finally:
+            mqtt_client.stopmqtt()
+
+    elif options.test_mode == "gps":
+        logger.info("GPS test")
+        from libs.gpsmodule import GPS
+        
+        gps_config = {
+            "port": options.port,
+            "baudrate": options.baudrate
+        }
+        logger.info(gps_config)
+        gps = GPS(gps_config)
+        gps.read_serial()
+        logger.info(gps.get_lat_lng())
+        gps.stop()
 
 if __name__ == '__main__':
     main()

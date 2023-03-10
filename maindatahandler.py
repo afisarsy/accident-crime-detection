@@ -11,8 +11,8 @@ class DataHandler:
     """
     __initial_data = {
         "status": "",
-        "lat": 2,
-        "lng": 2
+        "lat": 91,      #Outside Lat range (-90 - +90)
+        "lng": 181      #Outside Lng range (-180 - +180)
     }
     __data = []
     __min_length = 3
@@ -41,6 +41,12 @@ class DataHandler:
         Return True if the data persist for specified duration or gps data changed.
         """
         is_new = False
+        #Replace gps data with previous value if invalid
+        if type(new_data["lat"]) is not float:
+            new_data["lat"] = self.__last_data["lat"]
+        if type(new_data["lng"]) is not float:
+            new_data["lng"] = self.__last_data["lng"]
+
         #Analyze data
         if new_data["status"] == self.__last_data["status"]:
             self.__data.append(new_data)

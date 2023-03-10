@@ -1,4 +1,5 @@
 import logging
+import json
 from typing import Dict
 import io
 
@@ -14,13 +15,16 @@ class GPS:
 
     #config
     __port = ""
-    __baudrate = 19200
-    __serial = None
-    __serial_io = None
+    __baudrate = 9600
+    __gps_dump = "gps.dump"
+    __serial = serial.Serial(baudrate=__baudrate, timeout=0, rtscts=True)
+    __serial_io = io.TextIOWrapper(io.BufferedRWPair(__serial, __serial))
     __location = {
-        "lat": 1.32131331,
-        "lng": 0.42131312
+        "lat": None,
+        "lng": None
     }
+
+    ready = False
 
     def __init__(self, conf:Dict):
         """
@@ -29,31 +33,69 @@ class GPS:
         #Set config
         self.__port = conf["port"]
         self.__baudrate = conf["baudrate"]
+        self.__serial.port = self.__port
+        self.__serial.baudrate = self.__baudrate
 
-        self.__serial = serial.Serial(port=self.__port, baudrate=self.__baudrate, rtscts=1)
-        self.__serial_io = io.TextIOWrapper(io.BufferedRWPair(self.__serial, self.__serial))
+        #Open serial
+        self.start()
 
     def start(self):
-        if self.__serial is None:
-            logger.info("Failed to create Serial object")
-        elif self.__serial.is_open():
-            logger.warning("Serial connection already opened.")
+        if self.__serial.is_open:
+            logger.info("Serial connection already opened.")
+            return True
         else:
-            self.__serial = serial.Serial(self.__port)
+            try:
+                self.__serial.open()
+                return True
+            except serial.SerialException as e:
+                logger.error(e)
+                return False
 
     def stop(self):
-        if self.__serial is not None and self.__serial.is_open():
+        if self.__serial.is_open:
             self.__serial.close()
         else:
             logger.warning("Can't close serial connection, serial isn't connected.")
 
     def read_serial(self):
-        line = self.__serial_io.readline()
-        msg = pynmea2.parse(line)
-        self.__location = {
-            "lat": msg.latitude,
-            "lng": msg.longitude
-        }
+        if not self.__serial.is_open:
+            self.start()
+        
+        try:
+            line = self.__serial_io.readline()
+            msg = pynmea2.parse(line)
+            self.__location = {
+                "lat": float(msg.latitude),
+                "lng": float(msg.longitude)
+            }
+            if not self.ready:
+                self.ready = True
+
+            with open(self.__gps_dump, 'w') as f:
+                f.write(json.dumps({
+                    "location": self.__location
+                }))
+
+        except pynmea2.ParseError as parse_serial_err:
+            logger.error("Invalid GPS serial data : %s", parse_serial_err)
+            self.read_dumped_gps_data()
+        
+        except TypeError as invalid_parsed_data_err:
+            logger.error("Invalid parsed GPS data\nParsed Data:\n\tlat: {}, {}\n\t{}, {}".format(msg.latitude, type(msg.latitude), msg.longitude, type(msg.longitude)))
+            self.read_dumped_gps_data()
+
+    def read_dumped_gps_data(self):
+        try:
+            logger.info("Reading dumped gps data at %s", self.__gps_dump)
+
+            with open(self.__gps_dump, 'r') as f:
+                self.__location = json.loads(f.read())
+
+            if not self.ready:
+                self.ready = True
+            
+        except FileNotFoundError as no_file_err:
+            logger.error("No gps dump data\nDevice didn't get any GPS signal or other undiagnosed error\nDetection result won't be sent to the server")
 
     def get_lat_lng(self):
         return self.__location
