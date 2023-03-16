@@ -179,6 +179,7 @@ def test():
     elif options.test_mode == "gps":
         logger.info("GPS test")
         from libs.gpsmodule import GPS
+        from time import sleep
         
         gps_config = {
             "port": options.port,
@@ -186,6 +187,7 @@ def test():
         }
         logger.info(gps_config)
         gps = GPS(gps_config)
+        sleep(1)
         gps.read_serial()
         logger.info(gps.get_lat_lng())
         gps.stop()
