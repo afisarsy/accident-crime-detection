@@ -80,6 +80,10 @@ class GPS:
             logger.error("Invalid GPS serial data : %s", parse_serial_err)
             self.read_dumped_gps_data()
         
+        except AttributeError as  invalid_parsed_data_err:
+            logger.error("Invalid parsed GPS data\nData: {}".format(msg))
+            self.read_dumped_gps_data()
+        
         except TypeError as invalid_parsed_data_err:
             logger.error("Invalid parsed GPS data\nParsed Data:\n\tlat: {}, {}\n\t{}, {}".format(msg.latitude, type(msg.latitude), msg.longitude, type(msg.longitude)))
             self.read_dumped_gps_data()
@@ -89,7 +93,7 @@ class GPS:
             logger.info("Reading dumped gps data at %s", self.__gps_dump)
 
             with open(self.__gps_dump, 'r') as f:
-                self.__location = json.loads(f.read())
+                self.__location = json.loads(f.read())["location"]
 
             if not self.ready:
                 self.ready = True
