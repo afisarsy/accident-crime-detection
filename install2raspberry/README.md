@@ -35,16 +35,6 @@ sudo reboot
 
 **As for now ReSpeaker Mic only supported on Raspbian Buster or older.**
 
-Execute this cript after reboot.
-
-```bash
-sudo raspi-config
-# Select 1 System options
-# Select S2 Audio
-# Select your preferred Audio output device
-# Select Finish
-```
-
 Check the installation using following script. Installation succeed if you see your ReSpeaker Device.
 
 ```bash
@@ -52,7 +42,8 @@ arecord -L
 ```
 
 ### Install Accident Crime Detection prerequisites
-
-```python
+```bash
+sudo apt-get install portaudio19-dev
+sudo apt-get install python-pyaudio
 pip3 install -r requirements.txt
 ```

@@ -14,4 +14,3 @@ pip3 install numpy
 pip3 install h5py
 pip3 install pybind11
 pip3 install -U six wheel mock
-pip3 uninstall tensorflow
