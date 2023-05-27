@@ -6,6 +6,7 @@ import pyaudio
 import wave
 
 from libs.logger import initlogger
+from libs.argparserbase import checkloglevel
 
 parser = argparse.ArgumentParser(prog="Audio Recorder")
 logger = logging.getLogger(__name__)
@@ -68,7 +69,7 @@ def initargs():
             "Select used microphone index from available microphone devices. "
             "Use  main.py GET MIC  to get available microphone devices"
         ),
-    ),
+    )
     parser.add_argument(
         "-sr",
         "--sampling-rate",
@@ -78,6 +79,16 @@ def initargs():
         help=(
             "Specify sampling rate value. "
             "Default 44100"
+        )
+    )
+    parser.add_argument(
+        "-log",
+        "--log",
+        type=checkloglevel,
+        default="info",
+        help=(
+            "Provide logging level. "
+            "Example --log debug, default='warning'"
         )
     )
 
