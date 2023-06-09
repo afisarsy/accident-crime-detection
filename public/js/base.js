@@ -51,6 +51,9 @@ const ajaxPost = (url, data, sucessCallback, errorCallback) => {
         data: JSON.stringify(data),
         dataType: 'json',
         contentType: 'application/json',
+        headers: {
+            'X-CSRF-TOKEN': csrfCookie
+        },
         success: sucessCallback,
         error: errorCallback
     });
