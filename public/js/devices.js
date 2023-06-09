@@ -119,7 +119,7 @@ $(document).ready(function() {
         const inputChangeBehavior = () => {
             bootstrap.Modal.getOrCreateInstance('#modalDeviceProperties')._config.backdrop = 'static';
             $('#btnDeviceUpdate').removeClass('disabled');
-            devicePropertyIndex = null;
+            $('#modalDeviceProperties').attr('device-index', -1);
         }
         $('#propDeviceId').one('change', () => {
             inputChangeBehavior();
@@ -132,8 +132,6 @@ $(document).ready(function() {
         });
     }
 
-    //Device properties modal
-    var devicePropertyIndex = null;
     //Show modal init
     const exampleModal = document.getElementById('modalDeviceProperties');
     exampleModal.addEventListener('show.bs.modal', event => {
@@ -141,7 +139,7 @@ $(document).ready(function() {
         const button = event.relatedTarget;
 
         const index = button.getAttribute('device-index');
-        if (devicePropertyIndex != index){
+        if ($('#modalDeviceProperties').attr('device-index') != index){
             //Update the modal's content.
             bootstrap.Modal.getOrCreateInstance('#modalDeviceProperties')._config.backdrop = true;
             $('#modalDeviceProperties').attr('device-index', index);
@@ -186,8 +184,6 @@ $(document).ready(function() {
                         }
                     }
             }, null);
-
-            devicePropertyIndex = index;
         }
     });
 
@@ -300,6 +296,7 @@ $(document).ready(function() {
         ajaxPutDelete('/device/' + device_id, 'DELETE', {}, (response) => {
             bootstrap.Modal.getOrCreateInstance('#modalDeviceDelete').hide();
             bootstrap.Modal.getOrCreateInstance('#modalDeviceProperties').hide();
+            $('#modalDeviceProperties').attr('device-index', -1);
             
             getDevices();
         }, null);

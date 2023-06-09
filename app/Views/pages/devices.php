@@ -58,7 +58,7 @@
         </div>
     </div>
     
-    <div id="modalDeviceProperties" class="modal fade" data-bs-keyboard="false" tabindex="-1" aria-labelledby="devicePropertiesLabel" aria-hidden="true">
+    <div id="modalDeviceProperties" class="modal fade" device-index="-1" data-bs-keyboard="false" tabindex="-1" aria-labelledby="devicePropertiesLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
