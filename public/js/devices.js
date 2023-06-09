@@ -233,7 +233,7 @@ $(document).ready(function() {
         }
 
         if(error == 0){
-            ajaxPost('/device/add/', 'POST', $('#addDeviceForm').serializeObject(), (response) => {
+            ajaxPost('/device/add/', $('#addDeviceForm').serializeObject(), (response) => {
                 bootstrap.Modal.getOrCreateInstance('#modalDeviceAdd').hide();
                 $('#addDeviceId').val('');
                 $('#addDeviceName').val('');

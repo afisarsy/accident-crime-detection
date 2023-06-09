@@ -79,7 +79,7 @@ class Device extends BaseController
         $data = [];
 
         $headers = RequestModifier::get_forward_header($this->request);
-        $requestData = $this->request->getPost();
+        $requestData = $this->request->getJSON();
         $response = $this->device_m->add_device($headers, $this->jwtToken, $requestData);
 
         if($response->getStatusCode() != 200)
