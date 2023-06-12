@@ -22,12 +22,12 @@ subparser_mode = parser.add_subparsers(
     title="Program MODE",
     dest="mode",
     metavar="MODE",
-    required=True,
     description="Select Program Mode",
     help=(
         "Available MODE [run, get, test]."
     )
 )
+subparser_mode.required = True
 
 #Running arguments
 parser_run = subparser_mode.add_parser("run", aliases=["RUN"])
@@ -105,12 +105,12 @@ subparser_test = parser_test.add_subparsers(
     title="Unit Test",
     dest="test_mode",
     metavar="NAME",
-    required=True,
     description="Select Test NAME",
     help=(
         "Available test NAME [mqtt, gps]."
     )
 )
+subparser_test.required = True
 
 perser_test_mqtt = subparser_test.add_parser("mqtt", aliases=["MQTT"])
 perser_test_mqtt.add_argument(
