@@ -2,18 +2,31 @@ import os
 import logging
 import argparse
 from datetime import datetime
+from time import perf_counter
+from typing import Callable
 
 import numpy as np
 import asyncio
 
-from libs.michandler import Mic
 from libs.nnmodule import NN
 from libs.gpsmodule import GPS
 
 logger = logging.getLogger(__name__)
 
-#===================== Feature Extraction Tasks =====================
-async def featureextreaction(options:argparse.Namespace, mic:Mic, nn:NN, model_config:dict, path = ""):
+#=================== Audio File Segmentation Task ===================
+async def segmentaudio(options:argparse.Namespace, read_segment:Callable, status:Callable, model_config:dict):
+    """
+    Audio file segmentation task
+    """
+    
+    while status():
+        start_counter = perf_counter()
+        logger.debug("Read segment from file")
+        read_segment()
+        await asyncio.sleep((model_config["segment duration"] * model_config["overlap ratio"] / 1000) - (perf_counter() - start_counter))
+
+#===================== Feature Extraction Task ======================
+async def featureextreaction(options:argparse.Namespace, get_segments:Callable, status:Callable, nn:NN, model_config:dict, path = ""):
     """
     Feature extraction task
     """
@@ -21,9 +34,10 @@ async def featureextreaction(options:argparse.Namespace, mic:Mic, nn:NN, model_c
     from libs.audiomodule import Audio
 
     i = 0
-    while mic.stream.is_active():
+    while status():
+        start_counter = perf_counter()
         #Extract feature of available segments
-        for segment in mic.popallsegments():
+        for segment in get_segments():
             #Apply bandpass filter
             logger.debug("Filtering segment")
             if options.log_process:
@@ -38,7 +52,7 @@ async def featureextreaction(options:argparse.Namespace, mic:Mic, nn:NN, model_c
             logger.debug("Data normalization")
             normalized_spectrogram_db = Audio.normalize(mel_spectrogram_db)
 
-            if model_config["rbir"] is not None:
+            if "rbir" in model_config and model_config["rbir"] is not None:
                 feature = Audio.RbIR(normalized_spectrogram_db, model_config["rbir"])
             else:
                 feature = normalized_spectrogram_db
@@ -65,11 +79,11 @@ async def featureextreaction(options:argparse.Namespace, mic:Mic, nn:NN, model_c
 
             i += 1
 
-        await asyncio.sleep(model_config["segment duration"] * model_config["overlap ratio"] / 1000)
+        await asyncio.sleep((model_config["segment duration"] * model_config["overlap ratio"] / 1000) - (perf_counter() - start_counter))
 
 
 #========================== Detection Tasks =========================
-async def detection(options:argparse.Namespace, mic:Mic, nn:NN, th:float, model_config:dict, gps:GPS, mqtt_config:dict={}, mqtt_topic=""):
+async def detection(options:argparse.Namespace, status:Callable, nn:NN, th:float, model_config:dict, get_loc:Callable, mqtt_config:dict={}, mqtt_topic=""):
     """
     Classification and Thresholding task
     """
@@ -78,7 +92,7 @@ async def detection(options:argparse.Namespace, mic:Mic, nn:NN, th:float, model_
     data_handler = DataHandler({
         "segment duration": model_config["segment duration"],
         "overlap ratio": model_config["overlap ratio"],
-        "min duration": 1,          #in seconds
+        "min duration": .1,          #in seconds
         "gps tollerance": 10        #in meters
     })
 
@@ -103,7 +117,8 @@ async def detection(options:argparse.Namespace, mic:Mic, nn:NN, th:float, model_
         csv_writer = csv.DictWriter(log_process_file, header)
         csv_writer.writeheader()
 
-    while mic.stream.is_active():
+    while status():
+        start_counter = perf_counter()
         #Classification
         buffer = nn.popallbuffer()
         if len(buffer) > 0:
@@ -121,8 +136,8 @@ async def detection(options:argparse.Namespace, mic:Mic, nn:NN, th:float, model_
                 #Map result using output map
                 output = nn.mapresult(result)
 
-                #Get gps data
-                gps_data = gps.get_lat_lng()
+                #Get gps data if enabled
+                gps_data = get_loc()
 
                 #Data filtering
                 data = {
@@ -134,7 +149,7 @@ async def detection(options:argparse.Namespace, mic:Mic, nn:NN, th:float, model_
 
                 if data_handler.submit(data):
                     logger.info("Result : %s", data)
-                    if not options.no_mqtt and gps.ready:
+                    if not options.no_mqtt:
                         mqtt_client.publishdata(mqtt_topic, data)
 
                 #Comprehend data
@@ -165,7 +180,7 @@ async def detection(options:argparse.Namespace, mic:Mic, nn:NN, th:float, model_
                 except AttributeError as e:
                     logger.error(e)
 
-        await asyncio.sleep(0.01)
+        await asyncio.sleep(0.01 - (perf_counter() - start_counter))
 
     #Disconnect MQTT
     if not options.no_mqtt:
@@ -177,16 +192,17 @@ async def detection(options:argparse.Namespace, mic:Mic, nn:NN, th:float, model_
 
 
 #============================= GPS Tasks ============================
-async def gpsread(gps:GPS, mic:Mic):
+async def gpsread(gps:GPS, status:Callable):
     """
     GPS reading task
     """
     #Initialize gps module
-    while mic.stream.is_active():
+    while status():
+        start_counter = perf_counter()
         gps.read_serial()
 
         #Update gps data every 5 seconds if gps is ready, 1 second if otherwise
-        await asyncio.sleep(5 if gps.ready else 1)
+        await asyncio.sleep((5 - (perf_counter() - start_counter)) if gps.ready else (1 - (perf_counter() - start_counter)))
 
     #Stop gps serial connection
     gps.stop()

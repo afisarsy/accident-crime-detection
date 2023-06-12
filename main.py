@@ -103,9 +103,9 @@ def running():
     #tasks declaration
     from maintasks import featureextreaction, detection, gpsread
     tasks = asyncio.gather(
-        loop.create_task(featureextreaction(options, mic, nn, model_config, "Tests/save_spectrogram/spectrogram")),
-        loop.create_task(gpsread(gps, mic)),
-        loop.create_task(detection(options, mic, nn, options.threshold, model_config, gps, mqtt_config, mqtt_topic=mqtt_topics["test"]))
+        loop.create_task(featureextreaction(options, mic.popallsegments, mic.stream.is_active, nn, model_config, "Tests/save_spectrogram/spectrogram")),
+        loop.create_task(gpsread(gps, mic.stream.is_active)),
+        loop.create_task(detection(options, mic.stream.is_active, nn, options.threshold, model_config, gps.get_lat_lng, mqtt_config, mqtt_topic=mqtt_topics["test"]))
     )
 
     try:
@@ -147,50 +147,19 @@ def test():
     options = parser.parse_args()
 
     if options.test_mode == "mqtt":
-        logger.info("MQTT test")
-        from libs.mqttmodule import MQTT
-        from datetime import datetime
-        from libs.deviceinfo import device
-        config = {
-            "host": options.host,
-            "port": options.port
-        }
-        mqtt_client = MQTT(conf=config)
-        data = {
-            "lat": 1.32131331,
-            "lng": 0.42131312,
-            "status": "normal",
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        }
-        try:
-            while(not mqtt_client.connected):
-                pass
-            logger.info("Sendind data with topic {}\n\t\t\t\t\t\t\t  - Data: {}".format(options.topic + device.getid(), data))
-            mqtt_client.publishdata(options.topic, data)
-            logger.info("Data Sent")
-            logger.info("Press Ctrl+C to exit")
-            while(mqtt_client.connected):
-                pass
-        except KeyboardInterrupt as e:
-            pass
-        finally:
-            mqtt_client.stopmqtt()
-
+        from maintests import testmqtt
+        testmqtt(options)
     elif options.test_mode == "gps":
-        logger.info("GPS test")
-        from libs.gpsmodule import GPS
-        from time import sleep
-        
-        gps_config = {
-            "port": options.port,
-            "baudrate": options.baudrate
-        }
-        logger.info(gps_config)
-        gps = GPS(gps_config)
-        sleep(1)
-        gps.read_serial()
-        logger.info(gps.get_lat_lng())
-        gps.stop()
+        from maintests import testgps
+        testgps(options)
+    elif options.test_mode == "inferrt":
+        from maintests import testinferreal
+        options.no_mqtt = True
+        options.log_process = True
+        testinferreal(options)
+    elif options.test_mode == "infer":
+        from maintests import testinfer
+        testinfer(options)
 
 if __name__ == '__main__':
     main()

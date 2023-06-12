@@ -1,7 +1,7 @@
 import sys
 import subprocess
 
-SUPPORTED_DEVICES = [
+SUPPORTED_DEVICES = list([
     {
         "name" : "Linux PC",
         "serial_number_command" : "hal-get-property --udi /org/freedesktop/Hal/devices/computer --key system.hardware.uuid"
@@ -18,7 +18,7 @@ SUPPORTED_DEVICES = [
         "name" : "Jetson Nano",
         "serial_number_command" : "cat /sys/firmware/devicetree/base/serial-number"
     },
-]
+])
 
 class __Device:
     """

@@ -13,18 +13,16 @@ class MQTT:
     MQTT Communication Object
     """
 
-    #config
-    __host = "host"
-    __port = 1883
-    __subscribe_topics = []
-
-    #Mqtt status
-    connected = False
-
     def __init__(self, conf:Dict = {}):
         """
         Initalize communication through MQTT
         """
+        #config
+        self.__host = "host"
+        self.__port = 1883
+        self.__subscribe_topics = []
+        self.connected = False
+        
         #Set config if provided
         if "host" in conf.keys():
             self.__host = conf["host"]
@@ -32,12 +30,16 @@ class MQTT:
             self.__port = conf["port"]
         if "subscribe_topics" in conf.keys():
             self.__subscribe_topics = conf["subscribe_topics"]
+        if "id" in conf.keys():
+            self.device_id = conf['device_id']
+        else:
+            self.device_id = device.getid()
 
         #Initialize MQTT
         self.__init_mqtt()
     
     def __init_mqtt(self):
-        self.__client = mqtt.Client(client_id=device.getid())
+        self.__client = mqtt.Client(client_id=self.device_id)
         self.__client.on_connect = self.__mqtt_on_connect
         self.__client.on_disconnect = self.__mqtt_on_disconnect
         self.__client.on_message = self.__mqtt_on_message

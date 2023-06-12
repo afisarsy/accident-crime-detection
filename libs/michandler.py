@@ -16,24 +16,6 @@ class Mic:
     """
     Microphone Object
     """
-    
-    #config
-    __sampling_rate = 44100
-    __segment_duration = None
-    __overlap_ratio = None
-
-    #mic device params
-    __mic = pyaudio.PyAudio()
-    __selected_device_index = 0
-    __available_devices = {}
-
-    #stream params
-    stream = None
-    __CHUNKS_PER_SEGMENT = 20
-    __chunks = []
-    __CHUNK_COUNTER = 0
-    __streambits = None
-    __segment = []
 
     def __init__(self, conf:Dict):
         """
@@ -46,6 +28,19 @@ class Mic:
         self.__sampling_rate = conf["sampling rate"]
         self.__segment_duration = conf["segment duration"]
         self.__overlap_ratio = conf["overlap ratio"]
+        
+        #mic device params
+        self.__mic = pyaudio.PyAudio()
+        self.__selected_device_index = 0
+        self.__available_devices = {}
+
+        #stream params
+        self.stream = pyaudio.Stream
+        self.__CHUNKS_PER_SEGMENT = 20
+        self.__chunks = []
+        self.__CHUNK_COUNTER = 0
+        self.__streambits = None
+        self.__segment = []
 
         #Mic stream initialization
         self.__streambits = int(self.__sampling_rate / self.__CHUNKS_PER_SEGMENT)

@@ -12,27 +12,27 @@ class GPS:
     """
     GPS Object
     """
-
-    #config
-    __port = ""
-    __baudrate = 9600
     __gps_dump = "gps.dump"
-    __serial = serial.Serial(baudrate=__baudrate, timeout=0, rtscts=True)
-    __serial_io = io.TextIOWrapper(io.BufferedRWPair(__serial, __serial))
     __location = {
         "lat": None,
         "lng": None
     }
 
-    ready = False
-
     def __init__(self, conf:Dict):
         """
         Initialize GPS handler
         """
-        #Set config
+        #config
         self.__port = conf["port"]
         self.__baudrate = conf["baudrate"]
+        self.__serial = serial.Serial(baudrate=self.__baudrate, timeout=0, rtscts=True)
+        self.__serial_io = io.TextIOWrapper(io.BufferedRWPair(self.__serial, self.__serial))
+        self.__location = {
+            "lat": None,
+            "lng": None
+        }
+
+        self.ready = False
         self.__serial.port = self.__port
         self.__serial.baudrate = self.__baudrate
 
@@ -47,7 +47,7 @@ class GPS:
             try:
                 self.__serial.open()
                 return True
-            except serial.SerialException as e:
+            except serial.PortNotOpenError as e:
                 logger.error(e)
                 return False
 
@@ -103,3 +103,13 @@ class GPS:
 
     def get_lat_lng(self):
         return self.__location
+    
+    @staticmethod
+    def get_dumped_gps_data():
+        try:
+            logger.info("Reading dumped gps data at %s", GPS.__gps_dump)
+            with open(GPS.__gps_dump, 'r') as f:
+                return json.loads(f.read())["location"]
+        except FileNotFoundError as no_file_err:
+            logger.error("No gps dump data\nDevice didn't get any GPS signal or other undiagnosed error\nDetection result won't be sent to the server")
+            return GPS.__location

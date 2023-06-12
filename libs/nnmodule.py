@@ -18,16 +18,6 @@ class NN:
     """
     Neural Network Object
     """
-    #NN Model
-    __model = None
-
-    #Config
-    __model_path = None
-    __classes = []
-    __output_map = []
-
-    #Input buffer
-    __buffer = []
 
     def __init__(self, model_path, custom_objects, output_map, conf):
         """
@@ -41,6 +31,9 @@ class NN:
         #NN initialization
         logger.info(self.__model_path)
         self.__model = load_model(self.__model_path, custom_objects)
+
+        #Input buffer
+        self.__buffer = []
     
     def getmodelinfo(self):
         """
@@ -56,6 +49,14 @@ class NN:
         y = self.__model.predict(x=np.array(x), verbose=0) # type: ignore
         return y
     
+    def predictbatch(self, x):
+        """
+        Predict x using loaded model
+        """
+        #Predict input x, verbose 0=silent, 1=progress bar, 2=single line
+        y = self.__model.predict(x=x, verbose=0) # type: ignore
+        return y
+    
     def getclass(self, y):
         """
         Get prediction class name
@@ -66,7 +67,7 @@ class NN:
         """
         Threshold the prediction result
         """
-        return 11 if np.max(nn_result) < th else np.argmax(nn_result)
+        return self.__classes.index("road_traffic") if np.max(nn_result) < th else np.argmax(nn_result)
     
     def mapresult(self, result):
         """
@@ -102,17 +103,17 @@ class NN:
         return (x_train, y_train), (x_val, y_val), (x_test, y_test), classes
         
     @staticmethod
-    def loaddatatest(dataset_path, intensity_th = None):
+    def loaddatatest(dataset_path, intensity_th = None, shuffle=True):
         """
         Load test data from specified path
         """
         logger.info("Loading test data")
-        (x_test, y_test), classes = NN.__loaddata(dataset_path, "test", intensity_th)
+        (x_test, y_test), classes = NN.__loaddata(dataset_path, "test", intensity_th, shuffle)
 
         return (x_test, y_test), classes
     
     @staticmethod
-    def __loaddata(path, data_type, intensity_th):
+    def __loaddata(path, data_type, intensity_th, shuffle=True):
         """
         Load certain data_type of data (train, val, test)
         """
@@ -147,7 +148,8 @@ class NN:
                     sys.exit(0)
         
         #Shuffle loaded data
-        random.shuffle(data)
+        if shuffle:
+            random.shuffle(data)
 
         #Split X and Y
         x = np.array([spectrogram[0] for spectrogram in data])

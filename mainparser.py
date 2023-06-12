@@ -158,3 +158,41 @@ parser_test_gps.add_argument(
         "Default 9600"
     )
 )
+
+parser_test_inferrt = subparser_test.add_parser("inferrt", aliases=["inference-rt"])
+parser_test_inferrt.add_argument(
+    "filename",
+    metavar="AUDIO_FILE",
+    help=(
+        "Provide audio file path. "
+        "AUDIO_FILE must be a wav file. "
+    ),
+)
+parser_test_inferrt.add_argument(
+    "model",
+    metavar="MODEL_PATH",
+    help=(
+        "Provide model path. "
+        "MODEL_PATH must contain config.file. "
+    ),
+)
+parser_test_inferrt.add_argument(
+    "threshold",
+    metavar="TH",
+    type=float,
+    choices=[Range(0.0, 1.0)],
+    help=(
+        "Provide threhold value. "
+        "TH must be a float between (0.0-1.0). "
+    ),
+)
+
+parser_test_infer = subparser_test.add_parser("infer", aliases=["inference"])
+parser_test_infer.add_argument(
+    "models_dir",
+    metavar="MODELS_DIR",
+    help=(
+        "Provide models dir. "
+        "MODELS_dir must contain model.h5 and config.file. "
+    ),
+)

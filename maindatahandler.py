@@ -9,23 +9,25 @@ class DataHandler:
     """
     Data Handler class
     """
-    __initial_data = {
+    __INITIAL_DATA = dict({
         "status": "",
         "lat": 91,      #Outside Lat range (-90 - +90)
         "lng": 181      #Outside Lng range (-180 - +180)
-    }
-    __data = []
-    __min_length = 3
-    __gps_tollerance = 10 #in meters
-    __last_data = __initial_data
-    __last_valid_status = ""
-    __callibration_cycle_total = 5
-    __callibration_cycle_index = 0
+    })
 
     def __init__(self, conf:Dict = {}):
         """
         Output data handler object
         """
+        #Initial params
+        self.__data = []
+        self.__min_length = 3
+        self.__gps_tollerance = 10 #in meters
+        self.__last_data = DataHandler.__INITIAL_DATA
+        self.__last_valid_status = ""
+        self.__callibration_cycle_total = 5
+        self.__callibration_cycle_index = 0
+
         #Set config if provided
         if all(param in conf.keys() for param in ["segment duration", "overlap ratio", "min duration"]):
             self.__min_length = max(math.ceil((conf["min duration"] * 1000.) / (conf["segment duration"] * conf["overlap ratio"])) - 1, 1)
@@ -42,9 +44,9 @@ class DataHandler:
         """
         is_new = False
         #Replace gps data with previous value if invalid
-        if type(new_data["lat"]) is not float:
+        if "lat" in new_data and type(new_data["lat"]) is not float:
             new_data["lat"] = self.__last_data["lat"]
-        if type(new_data["lng"]) is not float:
+        if "lng" in new_data and type(new_data["lng"]) is not float:
             new_data["lng"] = self.__last_data["lng"]
 
         #Analyze data
@@ -60,12 +62,17 @@ class DataHandler:
             self.__callibration_cycle_index += 1
         else:
             #Get data gps mean location
-            mean_loc = {
-                "lat": mean([data["lat"] for data in self.__data]),
-                "lng": mean([data["lng"] for data in self.__data])
-            }
+            if "lat" in new_data and "lng" in new_data:
+                mean_loc = {
+                    "lat": mean([data["lat"] for data in self.__data]),
+                    "lng": mean([data["lng"] for data in self.__data])
+                }
+                distance = DataHandler.gps_get_distance(mean_loc, new_data)
+            else:
+                distance = 0.
+
             #Status persist for specified duration or gps moved beyond gps tollerance distance
-            if (len(self.__data) == self.__min_length and new_data["status"] != self.__last_valid_status) or DataHandler.gps_get_distance(mean_loc, new_data) > self.__gps_tollerance:
+            if (len(self.__data) == self.__min_length and new_data["status"] != self.__last_valid_status) or distance > self.__gps_tollerance:
                 self.__last_valid_status = new_data["status"]
                 is_new = True
 
