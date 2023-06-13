@@ -171,8 +171,11 @@ const connectMQTT = () => {
         //Parse message
         let topic = message.topic;
         let payload = message.payloadString;
-        
-        let nodeTopic = topic.split(mqttConfig.topics[1] + '/')[1];
+        let nodeTopic;
+        for(let i=0; i<mqttConfig.topics.length; i++){
+            nodeTopic = topic.split(mqttConfig.topics[i] + '/')[1];
+            if(nodeTopic != null) break;
+        }
         let topic_params = nodeTopic.split('/');
         let device_id = topic_params[0];
         
