@@ -151,7 +151,7 @@ mqttConfig.messageListener = [];
 //Global Functions
 //MQTT Functions
 function onConnect(){
-    //console.debug('MQTT client connected');
+    console.debug('MQTT client connected');
     mqttConfig.topics.forEach(topic => {
         client.subscribe(topic + '/#', {
             onSuccess: () => {

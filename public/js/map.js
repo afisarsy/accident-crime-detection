@@ -84,10 +84,12 @@ $(document).ready(() => {
             if (typeof device.last_data == 'object'){
                 locations.push([device.last_data.lat, device.last_data.lng]);
             }
-        })
-        map.fitBounds(locations,{
-            padding: [30, 30]
-        });
+        })   
+        if (locations.length > 0){
+            map.fitBounds(locations,{
+                padding: [30, 30]
+            });
+        }
     }
 
     //Init Mapbox
