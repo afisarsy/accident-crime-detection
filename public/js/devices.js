@@ -312,7 +312,7 @@ $(document).ready(function() {
             $(`#${device_id} .circle`).removeClass('Alert');
             $(`#${device_id} .circle`).addClass('normal');
         }
-        else if(data.status.toLowerCase() == 'car crash' || data.status.toLowerCase() == 'crime'){
+        else if(data.status.toLowerCase() == 'accident' || data.status.toLowerCase() == 'crime'){
             $(`#${device_id} .circle`).removeClass('normal');
             $(`#${device_id} .circle`).addClass('Alert');
         }
