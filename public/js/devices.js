@@ -5,7 +5,7 @@ $(document).ready(function() {
         var timestamp = device.last_data.timestamp || '-';
 
         var deviceHTML = '<div id="' + device.device_id + '" class="d-flex device" data-bs-toggle="modal" data-bs-target="#modalDeviceProperties" device-index="' + index + '" device-name="' + device.name + '">';
-        deviceHTML += '<div class="circle' + (status.toLowerCase() == 'normal' ? ' normal' : (status.toLowerCase() == 'car crash' || status.toLowerCase() == 'crime' ? ' Alert' : '')) + '"></div>';
+        deviceHTML += '<div class="circle' + (status.toLowerCase() == 'normal' ? ' normal' : (status.toLowerCase() == 'accident' || status.toLowerCase() == 'crime' ? ' Alert' : '')) + '"></div>';
         deviceHTML += '<div class="overview">';
         deviceHTML += '<p class="name">' + device.name + '</p>';
         deviceHTML += '<p class="status">' + status + '</p>';
@@ -23,7 +23,7 @@ $(document).ready(function() {
         var dataUrl = '/?lat=' + data.lat + '&lng=' + data.lng;
 
         var deviceDataHTML = '<div class="row deviceData">';
-        deviceDataHTML += '<p class="status' + (data.status.toLowerCase() == 'normal' ? ' normal' : (data.status.toLowerCase() == 'car crash' || data.status.toLowerCase() == 'crime' ? ' Alert' : '')) + '">' + data.status + '</p>';
+        deviceDataHTML += '<p class="status' + (data.status.toLowerCase() == 'normal' ? ' normal' : (data.status.toLowerCase() == 'accident' || data.status.toLowerCase() == 'crime' ? ' Alert' : '')) + '">' + data.status + '</p>';
         deviceDataHTML += '<p class="timestamp">' + data.timestamp + '</p>';
         deviceDataHTML += '<a href="' + dataUrl + '" class="location col">Location ';
         deviceDataHTML += '<i class="fa-solid fa-arrow-up-right-from-square"></i>';
