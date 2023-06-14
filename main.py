@@ -83,6 +83,7 @@ def running():
 
     #Output mapper
     output_map = {
+        "conversation" : "normal",
         "engine_idling" : "normal",
         "rain" : "normal",
         "road_traffic" : "normal",
