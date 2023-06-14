@@ -21,7 +21,8 @@ class DataHandler:
         """
         #Initial params
         self.__data = []
-        self.__min_length = 3
+        self.__min_alert_length = 3
+        self.__min_settle_length = 3
         self.__gps_tollerance = 10 #in meters
         self.__last_data = DataHandler.__INITIAL_DATA
         self.__last_valid_status = ""
@@ -29,14 +30,19 @@ class DataHandler:
         self.__callibration_cycle_index = 0
 
         #Set config if provided
-        if all(param in conf.keys() for param in ["segment duration", "overlap ratio", "min duration"]):
-            self.__min_length = max(math.ceil((conf["min duration"] * 1000.) / (conf["segment duration"] * conf["overlap ratio"])) - 1, 1)
+        if all(param in conf.keys() for param in ["segment duration", "overlap ratio"]):
+            if "min alert duration" in conf.keys():
+                self.__min_alert_length = max(math.ceil((conf["min alert duration"] * 1000.) / (conf["segment duration"] * conf["overlap ratio"])) - 1, 1)
+            if "min settle duration" in conf.keys():
+                self.__min_settle_length = max(math.ceil((conf["min settle duration"] * 1000.) / (conf["segment duration"] * conf["overlap ratio"])) - 1, 1)
         if "gps tollerance" in conf.keys():
             self.__gps_tollerance = conf["gps tollerance"]
         if "callibration cylce" in conf.keys():
             self.__callibration_cycle_total = conf["callibration cylce"]
-        if "min length" in conf.keys():
-            self.__min_length = conf["min length"]
+        if "min alert length" in conf.keys():
+            self.__min_alert_length = conf["min alert length"]
+        if "min settle length" in conf.keys():
+            self.__min_settle_length = conf["min settle length"]
     
     def submit(self, new_data):
         """
@@ -52,8 +58,12 @@ class DataHandler:
         #Analyze data
         if new_data["status"] == self.__last_data["status"]:
             self.__data.append(new_data)
-            if len(self.__data) > self.__min_length + 1:
-                self.__data.pop(0)
+            if new_data["status"].lower() == 'normal':
+                if len(self.__data) > self.__min_settle_length + 1:
+                    self.__data.pop(0)
+            else:
+                if len(self.__data) > self.__min_alert_length + 1:
+                    self.__data.pop(0)
         else:
             self.__data = [new_data]
         
@@ -72,9 +82,14 @@ class DataHandler:
                 distance = 0.
 
             #Status persist for specified duration or gps moved beyond gps tollerance distance
-            if (len(self.__data) == self.__min_length and new_data["status"] != self.__last_valid_status) or distance > self.__gps_tollerance:
-                self.__last_valid_status = new_data["status"]
-                is_new = True
+            if new_data["status"].lower() == 'normal':
+                if (len(self.__data) == self.__min_settle_length and new_data["status"] != self.__last_valid_status) or distance > self.__gps_tollerance:
+                    self.__last_valid_status = new_data["status"]
+                    is_new = True
+            else:
+                if (len(self.__data) == self.__min_alert_length and new_data["status"] != self.__last_valid_status) or distance > self.__gps_tollerance:
+                    self.__last_valid_status = new_data["status"]
+                    is_new = True
 
         #Update last data
         self.__last_data = new_data

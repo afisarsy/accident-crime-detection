@@ -21,6 +21,11 @@ class Mic:
         """
         Create Microphone Object
         """
+        #mic device params
+        self.__mic = pyaudio.PyAudio()
+        self.__selected_device_index = 0
+        self.__available_devices = {}
+
         #Mic initialization
         self.__available_devices = Mic.getdevices()
 
@@ -28,11 +33,6 @@ class Mic:
         self.__sampling_rate = conf["sampling rate"]
         self.__segment_duration = conf["segment duration"]
         self.__overlap_ratio = conf["overlap ratio"]
-        
-        #mic device params
-        self.__mic = pyaudio.PyAudio()
-        self.__selected_device_index = 0
-        self.__available_devices = {}
 
         #stream params
         self.stream = pyaudio.Stream
@@ -59,8 +59,8 @@ class Mic:
         all_devices = info.get('deviceCount')
         mics = {}
         for i in range(0, all_devices): # type: ignore
-            if (mic.get_device_info_by_host_api_device_index(0, i).get('maxInputChannels')) > 1: # type: ignore
-                mics[str(mic.get_device_info_by_host_api_device_index(0, i).get('index'))] = mic.get_device_info_by_host_api_device_index(0, i).get('name')
+            if (mic.get_device_info_by_index(i).get('maxInputChannels')) > 1: # type: ignore
+                mics[str(mic.get_device_info_by_index(i).get('index'))] = mic.get_device_info_by_index(i).get('name')
         return mics
     
     def selectdevice(self, id):

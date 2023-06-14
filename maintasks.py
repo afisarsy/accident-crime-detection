@@ -92,7 +92,8 @@ async def detection(options:argparse.Namespace, status:Callable, nn:NN, th:float
     data_handler = DataHandler({
         "segment duration": model_config["segment duration"],
         "overlap ratio": model_config["overlap ratio"],
-        "min duration": .1,          #in seconds
+        "min alert duration": .1,          #in seconds,
+        "min steady duration": 1,          #in seconds
         "gps tollerance": 10        #in meters
     })
 
@@ -147,6 +148,7 @@ async def detection(options:argparse.Namespace, status:Callable, nn:NN, th:float
                     "timestamp": buffer[i]["time"].strftime("%Y-%m-%d %H:%M:%S")
                 }
 
+                logger.info("Output : %s",output)
                 if data_handler.submit(data):
                     logger.info("Result : %s", data)
                     if not options.no_mqtt:

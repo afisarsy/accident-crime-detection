@@ -57,6 +57,12 @@ cd resizeSwapMemory
 ./setSwapMemorySize -g 4
 ```
 
+### Disable TBB
+
+```bash
+sudo mv /usr/include/tbb/tbb.h /usr/include/tbb/tbb.bak
+```
+
 ### Install Python 3.7
 
 ```bash
@@ -85,4 +91,13 @@ sudo make altinstall
 sudo apt-get install llvm-7 llvm-7-dev
 export LLVM_CONFIG=/usr/bin/llvm-config-7
 python3.7 -m pip install -r requirements.txt
+```
+
+### Disable Serial Console and add user to dialout group
+```bash
+sudo systemctl stop nvgetty
+sudo systemctl disable nvgetty
+sudo udevadm trigger
+sudo usermod -aG dialout <user>
+sudo reboot
 ```

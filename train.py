@@ -8,7 +8,7 @@ from tensorflow.keras.layers import Input, Conv1D, MaxPool1D, Flatten, Dense, LS
 from tensorflow.keras.optimizers import Adam, Adagrad, RMSprop, Nadam, SGD, Adamax, Ftrl, Adadelta
 
 from libs.configmodule import saveconfig
-from libs.argparserbase import Range
+from libs.argparserbase import checkloglevel, Range
 from libs.logger import initlogger
 from libs.nnmodule import NN, Rot90
 
@@ -250,6 +250,16 @@ def initargparser():
         help=(
             "Provide EPOCHS value. "
         ),
+    )
+    parser.add_argument(
+        "-log",
+        "--log",
+        type=checkloglevel,
+        default="info",
+        help=(
+            "Provide logging level. "
+            "Example --log debug, default='warning'"
+        )
     )
     options = parser.parse_args()
     return options

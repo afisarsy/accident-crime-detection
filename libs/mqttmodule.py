@@ -30,7 +30,7 @@ class MQTT:
             self.__port = conf["port"]
         if "subscribe_topics" in conf.keys():
             self.__subscribe_topics = conf["subscribe_topics"]
-        if "id" in conf.keys():
+        if "device_id" in conf.keys():
             self.device_id = conf['device_id']
         else:
             self.device_id = device.getid()
@@ -68,4 +68,4 @@ class MQTT:
         self.__client.loop_stop()
 
     def publishdata(self, topic, data):
-        self.__client.publish(topic + device.getid(), json.dumps(data))
+        self.__client.publish(topic + self.device_id, json.dumps(data))
