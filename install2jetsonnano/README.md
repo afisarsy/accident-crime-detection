@@ -64,11 +64,10 @@ sudo ln -s /usr/include/locale.h /usr/include/xlocale.h
 sudo apt-get install libhdf5-serial-dev hdf5-tools libhdf5-dev zlib1g-dev zip libjpeg8-dev liblapack-dev libblas-dev gfortran python3-dev -y
 sudo apt-get install python3-pip -y
 python3 -m pip install --upgrade pip
-sudo python3 -m pip install testresources setuptools virtualenv
-python3 -m pip install future mock keras_preprocessing keras_applications gast protobuf pybind11 cython pkgconfig packaging h5py
+python3 -m pip setuptools testresources virtualenv
 virtualenv acd
 source acd/bin/activate
-python3 -m pip install grpcio absl-py py-cpuinfo psutil portpicker six mock requests gast h5py astor termcolor protobuf keras-applications keras-preprocessing wrapt google-pasta setuptools testresources
+python3 -m pip install future keras_preprocessing keras_applications gast pybind11 cython pkgconfig packaging grpcio absl-py py-cpuinfo psutil portpicker six mock requests gast h5py astor termcolor protobuf keras-applications keras-preprocessing wrapt google-pasta setuptools testresources
 python3 -m pip install --extra-index-url https://developer.download.nvidia.com/compute/redist/jp/v461 tensorflow==2.7.0+nv22.1
 ```
 
