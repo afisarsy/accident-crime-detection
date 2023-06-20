@@ -24,7 +24,7 @@ sdkmanager --cli --query interactive
 4. Download JetPack and its SDK components by running the Launch command obtained from step 3.
 5. Choose L4T sources version (32.7.1 or higher) matched with your JetPack version in [Jetson Download Center](https://developer.nvidia.com/embedded/downloads#?tx=$product,jetson_nano).
 6. Open the L4T Development Guide of your L4T sources version, go to the Kernel Customization section and follow the **Manually Download and Expanding Kernel Sources** guide to download the kernel source and extract it.
-7. Patch the kernel following steps provided by [AshaTalambedu](https://github.com/AshaTalambedu/seeed-voicecard/blob/jetson-respeaker-4mic-array-compatible/README-jetson-4mic-circular-array-support).
+7. Patch the kernel following steps provided by [AshaTalambedu](https://github.com/AshaTalambedu/seeed-voicecard/blob/jetson-respeaker-4mic-array-compatible/README-jetson-4mic-circular-array-support) or extract Update.zip and replace file in paths.
 8. Follow the **Building the NVIDIA Kernel** guide in the Kernel Customization section in L4T Development Guide to build the kernel and apply it to your downloaded JetPack OS.
 9. Build the image by running
 ```bash
@@ -54,43 +54,38 @@ You can check the result by using Audacity with input default with 4 channels.
 ```bash
 git clone https://github.com/JetsonHacksNano/resizeSwapMemory.git
 cd resizeSwapMemory
-./setSwapMemorySize -g 4
+./setSwapMemorySize.sh -g 4
 ```
 
-### Disable TBB
+### Install Tensorflow 2.7
 
 ```bash
+sudo ln -s /usr/include/locale.h /usr/include/xlocale.h
+sudo apt-get install libhdf5-serial-dev hdf5-tools libhdf5-dev zlib1g-dev zip libjpeg8-dev liblapack-dev libblas-dev gfortran python3-dev -y
+sudo apt-get install python3-pip -y
+python3 -m pip install --upgrade pip
+sudo python3 -m pip install testresources setuptools virtualenv
+python3 -m pip install future mock keras_preprocessing keras_applications gast protobuf pybind11 cython pkgconfig packaging h5py
+virtualenv acd
+source acd/bin/activate
+python3 -m pip install grpcio absl-py py-cpuinfo psutil portpicker six mock requests gast h5py astor termcolor protobuf keras-applications keras-preprocessing wrapt google-pasta setuptools testresources
+python3 -m pip install --extra-index-url https://developer.download.nvidia.com/compute/redist/jp/v461 tensorflow==2.7.0+nv22.1
+```
+
+### Install librosa
+
+```bash
+sudo apt-get install llvm-9 llvm-9-dev
+export LLVM_CONFIG=/usr/bin/llvm-config-9
+sudo apt-get install portaudio19-dev python-all-dev python3-all-dev
 sudo mv /usr/include/tbb/tbb.h /usr/include/tbb/tbb.bak
-```
-
-### Install Python 3.7
-
-```bash
-sudo apt update
-sudo apt install build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev wget libbz2-dev
-```
-
-Download Python source from [Python Download Page](https://www.python.org/downloads/source/).
-
-```bash
-tar -xf Python-3.7.9.tgz
-cd Python-3.7.9
-./configure --enable-optimizations
-make -j 4
-sudo make altinstall
-```
-
-### Install Tensorflow 2.7.0 or later
-
-```bash
-
+python3 -m pip install librosa
+sudo mv /usr/include/tbb/tbb.bak /usr/include/tbb/tbb.h
 ```
 
 ### Install Accident Crime Detection prerequisites
 ```bash
-sudo apt-get install llvm-7 llvm-7-dev
-export LLVM_CONFIG=/usr/bin/llvm-config-7
-python3.7 -m pip install -r requirements.txt
+python3 -m pip install -r install2jetsonnano/requirements.txt
 ```
 
 ### Disable Serial Console and add user to dialout group

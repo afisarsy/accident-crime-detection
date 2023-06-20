@@ -9,18 +9,6 @@ Install the accident crime detection on Raspberry Pi.
 
 ## Installation
 
-### Install tensorflow 2.7
-
-Run this script using bash.
-
-```bash
-./download_tensorflow-2.7.0-cp37-none-linux_aarch64_numpy1214.sh
-./install_tensorflow_2.7.0_prerequisites.sh
-./install_tensorflow_2.7.0.sh
-```
-
-**Tensorflow 2.7 cannot be installed on Raspberry older than Raspberry Pi 4 with OS older than Raspbian Buster arm64.**
-
 ### Install mic driver
 
 If you use [ReSpeaker Mic](https://wiki.seeedstudio.com/ReSpeaker/) run the following script.
@@ -40,6 +28,18 @@ Check the installation using following script. Installation succeed if you see y
 ```bash
 arecord -L
 ```
+
+### Install tensorflow 2.7
+
+Run this script using bash.
+
+```bash
+./download_tensorflow-2.7.0-cp37-none-linux_aarch64_numpy1214.sh
+./install_tensorflow_2.7.0_prerequisites.sh
+./install_tensorflow_2.7.0.sh
+```
+
+**Tensorflow 2.7 cannot be installed on Raspberry older than Raspberry Pi 4 with OS older than Raspbian Buster arm64.**
 
 ### Install Accident Crime Detection prerequisites
 ```bash
